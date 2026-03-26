@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
-import { X } from 'lucide-react';
+import { X, TrendingUp } from 'lucide-react';
 
 const AddStockModal = ({ isOpen, onClose, onAdded }) => {
   const { user } = useAuth();
@@ -13,6 +13,8 @@ const AddStockModal = ({ isOpen, onClose, onAdded }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleSearch = async (e) => {
     const val = e.target.value;
@@ -144,6 +146,27 @@ const AddStockModal = ({ isOpen, onClose, onAdded }) => {
             )}
             {isSearching && <div className="absolute right-4 top-[38px] text-xs text-slate-500">...</div>}
           </div>
+
+          {!searchQuery && (
+            <div className="-mt-1 mb-2">
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                <TrendingUp size={12} className="text-blue-400" /> Trending Stocks
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {['AAPL', 'NVDA', 'MSFT', 'RELIANCE.BSE', 'TCS.BSE', 'HDFCBANK.BSE'].map(sym => (
+                  <button 
+                    key={sym} 
+                    type="button" 
+                    onClick={() => selectStock(sym)}
+                    className="px-3 py-1.5 bg-slate-800/50 hover:bg-slate-800 text-slate-300 text-xs font-medium rounded-lg transition-all border border-slate-700/50 hover:border-blue-500/50 hover:text-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    {sym}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-slate-400 mb-1">Total Investment (₹)</label>
             <input

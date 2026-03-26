@@ -74,7 +74,9 @@ app.get('/api/portfolio', attachUserId, async (req, res) => {
 
     res.status(200).json(portfolioWithLivePrices);
   } catch (err) {
-    console.error("Portfolio fetch error:", err.message);
+    if (!err.message.includes('fetch failed')) {
+      console.error("Portfolio fetch error:", err.message);
+    }
     res.status(200).json([]);
   }
 });
@@ -101,7 +103,9 @@ app.get('/api/history', attachUserId, async (req, res) => {
     const mapped = history.map(h => ({ ...h, ticker: h.stock_name || h.ticker }));
     res.status(200).json(mapped);
   } catch (e) {
-    console.error("History fetch error:", e.message);
+    if (!e.message.includes('fetch failed')) {
+      console.error("History fetch error:", e.message);
+    }
     res.status(200).json([]);
   }
 });
@@ -123,7 +127,9 @@ app.get('/api/news', attachUserId, async (req, res) => {
     
     res.status(200).json(news);
   } catch (err) {
-    console.error("News fetch error:", err.message);
+    if (!err.message.includes('fetch failed')) {
+      console.error("News fetch error:", err.message);
+    }
     res.status(200).json([]);
   }
 });
