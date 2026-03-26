@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { Plus, TrendingUp, TrendingDown } from 'lucide-react';
@@ -6,9 +7,18 @@ import AddStockModal from '../components/AddStockModal';
 
 const Portfolio = () => {
   const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [holdings, setHoldings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (location.search.includes('addStock=true')) {
+      setIsModalOpen(true);
+      navigate('/portfolio', { replace: true });
+    }
+  }, [location, navigate]);
 
   const fetchPortfolio = async () => {
     try {

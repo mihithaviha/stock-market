@@ -2,11 +2,9 @@ import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Briefcase, PlusCircle, LogOut, Activity, History as HistoryIcon, TrendingUp, Newspaper, BrainCircuit, BookOpen, Settings as SettingsIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import AddStockModal from './AddStockModal';
 
 const Layout = () => {
   const { signOut, user } = useAuth();
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const navigate = useNavigate();
 
   const navLinkClass = ({ isActive }) => 
@@ -27,7 +25,7 @@ const Layout = () => {
           <NavLink to="/portfolio" className={navLinkClass}>
             <Briefcase size={20} /><span>My Portfolio</span>
           </NavLink>
-          <button onClick={() => setIsAddModalOpen(true)} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-slate-400 hover:bg-slate-800/80 hover:text-emerald-400 font-medium text-left">
+          <button onClick={() => navigate('/portfolio?addStock=true')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-slate-400 hover:bg-slate-800/80 hover:text-emerald-400 font-medium text-left">
             <PlusCircle size={20} className="text-emerald-500" /><span>Add Stock</span>
           </button>
           
@@ -67,8 +65,6 @@ const Layout = () => {
       <main className="flex-1 overflow-auto bg-[#0a0f1c] relative">
         <Outlet />
       </main>
-      
-      <AddStockModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onAdded={() => { navigate('/portfolio'); }} />
     </div>
   );
 };
