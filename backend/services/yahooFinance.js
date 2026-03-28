@@ -1,6 +1,7 @@
-const YahooFinance = require('yahoo-finance2').default;
-const yahooFinance = new YahooFinance({ suppressNotices: ['yahooSurvey', 'historicalDateNotMatch'] });
+const YahooFinance = require("yahoo-finance2").default;
+const language = require('@google-cloud/language');
 
+const yahooFinance = new YahooFinance();
 async function getStockQuote(ticker) {
   try {
     const quote = await yahooFinance.quote(ticker);
@@ -22,12 +23,35 @@ async function getStockQuote(ticker) {
 async function getStockNews(ticker) {
   try {
     const search = await yahooFinance.search(ticker, { newsCount: 3 });
-    return search.news.map(n => ({
-      title: n.title,
-      link: n.link,
-      publisher: n.publisher,
-      providerPublishTime: n.providerPublishTime,
-      sentiment: Math.random() > 0.5 ? 0.6 : -0.4 // mock sentiment for UI coloring
+    const newsItems = search.news || [];
+    
+    let nlpClient = null;
+    try {
+      if (process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.GOOGLE_CLOUD_PROJECT) {
+        nlpClient = new language.LanguageServiceClient();
+      }
+    } catch(e) {
+      console.warn("NLP Client not initialized");
+    }
+    
+    return await Promise.all(newsItems.map(async n => {
+      let sentiment = Math.random() > 0.5 ? 0.6 : -0.4;
+      if (nlpClient) {
+        try {
+          const document = { content: n.title, type: 'PLAIN_TEXT' };
+          const [result] = await nlpClient.analyzeSentiment({ document });
+          sentiment = result.documentSentiment.score;
+        } catch(nlpErr) {
+          console.warn("Sentiment analysis omitted");
+        }
+      }
+      return {
+        title: n.title,
+        link: n.link,
+        publisher: n.publisher,
+        providerPublishTime: n.providerPublishTime,
+        sentiment
+      };
     }));
   } catch (error) {
     console.error(`Error fetching news for ${ticker}:`, error.message);
@@ -48,7 +72,7 @@ async function getMarketTrends() {
       topLosers: losers?.quotes ? losers.quotes.map(formatQuote) : [],
       mostActive: actives?.quotes ? actives.quotes.map(formatQuote) : []
     };
-  } catch(e) {
+  } catch (e) {
     console.error("Trends error:", e.message);
     return null;
   }
@@ -68,7 +92,7 @@ async function getStockFinancials(ticker) {
       totalDebt: fd.totalDebt || 0,
       recommendationKey: fd.recommendationKey || 'none'
     };
-  } catch(e) {
+  } catch (e) {
     console.error("Financials error:", e.message);
     return null;
   }
@@ -78,12 +102,11 @@ async function searchStocks(query) {
   try {
     const results = await yahooFinance.search(query, { quotesCount: 8, newsCount: 0 });
     return results.quotes
-      .filter(q => q.isYahooFinance) // Filter out news/unrelated
       .map(q => ({
         symbol: q.symbol,
-        name: q.shortName || q.longName,
-        exchDisp: q.exchDisp,
-        type: q.quoteType
+        name: q.shortName || q.longName || q.symbol,
+        exchDisp: q.exchDisp || 'Unknown',
+        type: q.quoteType || 'Unknown'
       }));
   } catch (e) {
     console.error("Search API error:", e.message);

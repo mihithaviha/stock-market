@@ -24,6 +24,12 @@ const attachUserId = (req, res, next) => {
   next();
 };
 
+// In-memory fallback if no valid Supabase .env is found
+let localHoldings = [];
+let localHistory = [];
+let localPreferences = {};
+let localIdCounter = 1;
+
 app.post('/api/portfolio/add', attachUserId, async (req, res) => {
   const { ticker, quantity, buyPrice } = req.body;
   if (!ticker || quantity == null || buyPrice == null) {
@@ -39,8 +45,13 @@ app.post('/api/portfolio/add', attachUserId, async (req, res) => {
     if (error) throw error;
     res.status(201).json(data[0]);
   } catch (err) {
+    if (err.message && err.message.includes('fetch failed')) {
+      const newHolding = { id: localIdCounter++, user_id: req.userId, stock_name: ticker.toUpperCase(), quantity, buy_price: buyPrice };
+      localHoldings.push(newHolding);
+      return res.status(201).json(newHolding);
+    }
     console.error("Add Stock DB Error:", err.message);
-    res.status(500).json({ error: 'Failed to add stock' }); // True failure instead of mock
+    res.status(500).json({ error: 'Failed to add stock' }); 
   }
 });
 
@@ -52,9 +63,20 @@ app.get('/api/portfolio', attachUserId, async (req, res) => {
       .eq('user_id', req.userId);
 
     if (error) throw error;
-    
-    const portfolioWithLivePrices = await Promise.all(holdings.map(async (h) => {
-      const tickerSymbol = h.stock_name || h.ticker; // support both schemas securely
+    await sendPortfolioResponse(holdings, res);
+  } catch (err) {
+    if (err.message && err.message.includes('fetch failed')) {
+      const targetHoldings = localHoldings.filter(h => h.user_id === req.userId);
+      return await sendPortfolioResponse(targetHoldings, res);
+    }
+    console.error("Portfolio fetch error:", err.message);
+    res.status(200).json([]);
+  }
+});
+
+async function sendPortfolioResponse(holdingsList, res) {
+    const portfolioWithLivePrices = await Promise.all(holdingsList.map(async (h) => {
+      const tickerSymbol = h.stock_name || h.ticker; 
       const liveData = await getStockQuote(tickerSymbol);
       const currentPrice = liveData ? liveData.price : h.buy_price; 
       const name = liveData ? liveData.name : tickerSymbol;
@@ -71,15 +93,8 @@ app.get('/api/portfolio', attachUserId, async (req, res) => {
         profitLoss
       };
     }));
-
     res.status(200).json(portfolioWithLivePrices);
-  } catch (err) {
-    if (!err.message.includes('fetch failed')) {
-      console.error("Portfolio fetch error:", err.message);
-    }
-    res.status(200).json([]);
-  }
-});
+}
 
 app.post('/api/portfolio/sell', attachUserId, async (req, res) => {
   const { id, ticker, sellPrice, quantity, buyPrice } = req.body;
@@ -90,6 +105,11 @@ app.post('/api/portfolio/sell', attachUserId, async (req, res) => {
     }]);
     res.status(200).json({ success: true });
   } catch (e) {
+    if (e.message && e.message.includes('fetch failed')) {
+      localHoldings = localHoldings.filter(h => h.id !== id);
+      localHistory.push({ id: localIdCounter++, user_id: req.userId, stock_name: ticker, quantity, buy_price: buyPrice, sell_price: sellPrice });
+      return res.status(200).json({ success: true });
+    }
     res.status(500).json({ error: "Failed to record sell transaction" });
   }
 });
@@ -99,47 +119,72 @@ app.get('/api/history', attachUserId, async (req, res) => {
     const { data: history, error } = await supabase.from('history').select('*').eq('user_id', req.userId);
     if (error) throw error;
     
-    // Map stock_name back to ticker if necessary for frontend
     const mapped = history.map(h => ({ ...h, ticker: h.stock_name || h.ticker }));
     res.status(200).json(mapped);
   } catch (e) {
-    if (!e.message.includes('fetch failed')) {
-      console.error("History fetch error:", e.message);
+    if (e.message && e.message.includes('fetch failed')) {
+      const mapped = localHistory.filter(h => h.user_id === req.userId).map(h => ({ ...h, ticker: h.stock_name || h.ticker }));
+      return res.status(200).json(mapped);
     }
+    console.error("History fetch error:", e.message);
     res.status(200).json([]);
   }
 });
 
 app.get('/api/news', attachUserId, async (req, res) => {
   try {
-    let tickersToSearch = [];
+    let tickersToSearch = ['SPY', 'QQQ', 'DIA']; // Always include market-wide news
     try { 
       const { data: holdings } = await supabase.from('holdings').select('stock_name, ticker').eq('user_id', req.userId);
-      if (holdings && holdings.length > 0) tickersToSearch = holdings.map(h => h.stock_name || h.ticker).slice(0, 3);
+      if (holdings && holdings.length > 0) {
+        tickersToSearch.push(...holdings.map(h => h.stock_name || h.ticker).slice(0, 3));
+      } else {
+        const localH = localHoldings.filter(h => h.user_id === req.userId);
+        tickersToSearch.push(...localH.map(h => h.stock_name || h.ticker).slice(0, 3));
+      }
     } catch(e) {}
     
-    if (tickersToSearch.length === 0) {
-      return res.status(200).json([]); 
-    }
+    // Deduplicate tickers
+    tickersToSearch = [...new Set(tickersToSearch)];
     
     const unflattenedNews = await Promise.all(tickersToSearch.map(t => getStockNews(t)));
-    const news = unflattenedNews.flat().slice(0, 10);
+    const news = unflattenedNews.flat().slice(0, 15);
     
     res.status(200).json(news);
   } catch (err) {
-    if (!err.message.includes('fetch failed')) {
+    if (!err?.message?.includes('fetch failed')) {
       console.error("News fetch error:", err.message);
     }
     res.status(200).json([]);
   }
 });
 
-// Legacy market endpoint for general search
-app.get('/api/market/:ticker', async (req, res) => {
-  const ticker = req.params.ticker.toUpperCase();
-  const liveData = await getStockQuote(ticker);
-  if (liveData) res.status(200).json({ ticker, currentPrice: liveData.price });
-  else res.status(404).json({error: 'Not found'});
+app.get('/api/user/preferences', attachUserId, async (req, res) => {
+   try {
+      const { data, error } = await supabase.from('users').select('alert_time').eq('id', req.userId).single();
+      if (error) throw error;
+      res.status(200).json(data);
+   } catch(e) {
+      if (e.message && e.message.includes('fetch failed')) {
+         return res.status(200).json(localPreferences[req.userId] || { alert_time: '17:00' });
+      }
+      res.status(200).json({ alert_time: '17:00' });
+   }
+});
+
+app.post('/api/user/preferences', attachUserId, async (req, res) => {
+   const { alert_time } = req.body;
+   try {
+      const { error } = await supabase.from('users').update({ alert_time }).eq('id', req.userId);
+      if (error) throw error;
+      res.status(200).json({ success: true });
+   } catch(e) {
+      if (e.message && e.message.includes('fetch failed')) {
+         localPreferences[req.userId] = { ...localPreferences[req.userId], alert_time };
+         return res.status(200).json({ success: true });
+      }
+      res.status(500).json({ error: "Failed to save preferences" });
+   }
 });
 
 const { getMarketTrends, getStockFinancials, searchStocks } = require('./services/yahooFinance');
@@ -157,36 +202,46 @@ app.get('/api/market/trends', attachUserId, async (req, res) => {
   else res.status(500).json({ error: "Failed to fetch trends" });
 });
 
+app.get('/api/market/:ticker', async (req, res) => {
+  const ticker = req.params.ticker.toUpperCase();
+  const liveData = await getStockQuote(ticker);
+  if (liveData) res.status(200).json({ ticker, currentPrice: liveData.price });
+  else res.status(404).json({error: 'Not found'});
+});
+
 app.get('/api/stock/:ticker/financials', attachUserId, async (req, res) => {
   const fin = await getStockFinancials(req.params.ticker.toUpperCase());
   if (fin) res.status(200).json(fin);
   else res.status(500).json({ error: "Failed to fetch financials" });
 });
 
-app.get('/api/ai/recommendations', attachUserId, async (req, res) => {
+const { GoogleGenAI } = require('@google/genai');
+
+app.post('/api/chatbot', attachUserId, async (req, res) => {
   try {
-     const { data: holdings } = await supabase.from('holdings').select('*').eq('user_id', req.userId);
-     if (!holdings || holdings.length === 0) return res.status(200).json([]);
+     const { message, systemInstruction } = req.body;
+     const apiKey = process.env.GEMINI_API_KEY;
      
-     const recs = await Promise.all(holdings.map(async (h) => {
-        const liveData = await getStockQuote(h.ticker);
-        if (!liveData) return null;
-        
-        let signal = 'HOLD';
-        let message = 'Your investment is maintaining steady ground. Answer: Hold and wait.';
-        let sentiment = 'neutral';
-        const chg = liveData.changePercent;
-        
-        if (chg > 4) { signal = 'STRONG BUY'; message = 'Strong growth potential observed. Answer: Your investment is doing exceptionally well.'; sentiment = 'bullish'; }
-        else if (chg > 1.5) { signal = 'BUY'; message = 'Positive upward trend detected. Answer: Your investment is doing good.'; sentiment = 'bullish'; }
-        else if (chg < -4) { signal = 'EXIT'; message = 'Consider exiting immediately. Severe loss detected. Answer: You should exit.'; sentiment = 'bearish'; }
-        else if (chg < -2) { signal = 'WARNING'; message = 'Risk increasing. Market conditions uncertain. Answer: Wait and monitor support levels.'; sentiment = 'bearish'; }
-        
-        return { id: h.id, ticker: h.ticker, name: liveData.name, currentPrice: liveData.price, dayChange: chg, signal, message, sentiment };
-     }));
-     res.status(200).json(recs.filter(r => r !== null));
+     if (!apiKey || apiKey === 'mock-key') {
+       return res.status(200).json({ 
+         reply: "I am a local AI placeholder! You'll need to add your GEMINI_API_KEY to the backend .env file to enable my true stock analysis capabilities." 
+       });
+     }
+
+     const ai = new GoogleGenAI({ apiKey });
+     const response = await ai.models.generateContent({
+         model: 'gemini-2.5-flash',
+         contents: message,
+         config: {
+             systemInstruction: systemInstruction || "You are a professional, easy-to-understand Stock Market AI Assistant.",
+             temperature: 0.7
+         }
+     });
+
+     res.status(200).json({ reply: response.text });
   } catch(e) {
-     res.status(200).json([]); // Strictly NO MOCK DATA
+     console.error("ChatBot Error:", e.message);
+     res.status(500).json({ error: "Failed to process chat query" });
   }
 });
 

@@ -10,7 +10,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import History from './pages/History';
 import MarketTrends from './pages/MarketTrends';
 import NewsAlerts from './pages/NewsAlerts';
-import AIRecommendations from './pages/AIRecommendations';
+import StockBot from './pages/StockBot';
 import LearnStocks from './pages/LearnStocks';
 import Settings from './pages/Settings';
 
@@ -47,7 +47,7 @@ function AppRoutes() {
         <Route path="history" element={<History />} />
         <Route path="market-trends" element={<MarketTrends />} />
         <Route path="news-alerts" element={<NewsAlerts />} />
-        <Route path="ai-recommendations" element={<AIRecommendations />} />
+        <Route path="ai-assistant" element={<StockBot />} />
         <Route path="learn-stocks" element={<LearnStocks />} />
         <Route path="settings" element={<Settings />} />
       </Route>

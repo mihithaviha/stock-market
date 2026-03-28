@@ -36,8 +36,8 @@ const Layout = () => {
           <NavLink to="/news-alerts" className={navLinkClass}>
             <Newspaper size={20} /><span>News & Alerts</span>
           </NavLink>
-          <NavLink to="/ai-recommendations" className={navLinkClass}>
-            <BrainCircuit size={20} className="text-purple-400"/><span>AI Recommendations</span>
+          <NavLink to="/ai-assistant" className={navLinkClass}>
+            <BrainCircuit size={20} className="text-purple-400"/><span>AI Assistant</span>
           </NavLink>
           
           <div className="pt-6 pb-2 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Account Data</div>

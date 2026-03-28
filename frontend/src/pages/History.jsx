@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { History as HistoryIcon, TrendingUp, TrendingDown, Clock } from 'lucide-react';
+import { History as HistoryIcon, TrendingUp, TrendingDown, Clock, Activity, Target, Award } from 'lucide-react';
 
 const History = () => {
   const { user } = useAuth();
@@ -21,6 +21,13 @@ const History = () => {
   }, [user]);
 
   const totalRealizedPnL = history.reduce((acc, h) => acc + ((h.sell_price - h.buy_price) * h.quantity), 0);
+  const totalTrades = history.length;
+  const winningTrades = history.filter(h => (h.sell_price - h.buy_price) > 0).length;
+  const winRate = totalTrades > 0 ? ((winningTrades / totalTrades) * 100).toFixed(1) : 0;
+  const bestTrade = history.reduce((best, h) => {
+    const pnl = (h.sell_price - h.buy_price) * h.quantity;
+    return pnl > best.pnl ? { ticker: h.ticker || h.stock_name, pnl } : best;
+  }, { ticker: '-', pnl: 0 });
 
   return (
     <div className="p-8 max-w-7xl mx-auto font-sans text-slate-50">
@@ -32,10 +39,20 @@ const History = () => {
            </div>
            <p className="text-slate-400 mt-1">Review your past investments and total realized profit.</p>
         </div>
-        <div className="bg-slate-900 border border-slate-800 px-6 py-4 rounded-2xl shadow-xl flex items-center gap-4">
-           <div className="text-slate-400 font-medium">Net Realized PnL</div>
-           <div className={`text-2xl font-bold flex items-center gap-1 ${totalRealizedPnL >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-              {totalRealizedPnL >= 0 ? '+' : ''}₹{totalRealizedPnL.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}
+        <div className="flex flex-wrap gap-4">
+           <div className="bg-slate-900 border border-slate-800 px-6 py-4 rounded-2xl shadow-xl flex flex-col justify-center">
+              <div className="text-slate-400 font-medium text-sm flex items-center gap-2"><Target size={16}/> Win Rate</div>
+              <div className="text-2xl font-bold text-blue-400 mt-1">{winRate}%</div>
+           </div>
+           <div className="bg-slate-900 border border-slate-800 px-6 py-4 rounded-2xl shadow-xl flex flex-col justify-center">
+              <div className="text-slate-400 font-medium text-sm flex items-center gap-2"><Award size={16}/> Best Trade</div>
+              <div className="text-2xl font-bold text-emerald-400 mt-1">{bestTrade.ticker} <span className="text-sm font-medium">({bestTrade.pnl > 0 ? '+' : ''}₹{bestTrade.pnl.toFixed(2)})</span></div>
+           </div>
+           <div className="bg-slate-900 border border-slate-800 px-6 py-4 rounded-2xl shadow-xl flex flex-col justify-center">
+              <div className="text-slate-400 font-medium text-sm flex items-center gap-2"><Activity size={16}/> Net Realized PnL</div>
+              <div className={`text-2xl font-bold flex items-center gap-1 mt-1 ${totalRealizedPnL >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                 {totalRealizedPnL >= 0 ? '+' : ''}₹{totalRealizedPnL.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}
+              </div>
            </div>
         </div>
       </div>

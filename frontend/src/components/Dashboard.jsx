@@ -176,7 +176,7 @@ const Dashboard = () => {
                      </div>
                      <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl flex gap-3 text-blue-100">
                         <AlertCircle className="shrink-0 text-blue-400" size={20} />
-                        <span className="text-sm">Based on market trends, <strong className="text-blue-400">{topGainer.ticker}</strong> is currently showing strong bullish momentum! 📈</span>
+                        <span className="text-sm">Based on market trends, <strong className="text-blue-400">{topGainer.ticker}</strong> is currently showing strong growth potential! 📈</span>
                      </div>
                    </div>
                  ) : (

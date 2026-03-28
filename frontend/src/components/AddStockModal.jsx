@@ -12,9 +12,23 @@ const AddStockModal = ({ isOpen, onClose, onAdded }) => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [trendingStocks, setTrendingStocks] = useState(['AAPL', 'NVDA', 'MSFT', 'RELIANCE.BSE']);
   const [isSearching, setIsSearching] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      axios.get('http://localhost:5000/api/market/trends', { headers: { 'x-user-id': user?.id || 'mock-id' } })
+        .then(res => {
+          if (res.data && res.data.mostActive && res.data.mostActive.length > 0) {
+            setTrendingStocks(res.data.mostActive.map(t => t.symbol).slice(0, 6));
+          } else if (res.data && res.data.topGainers && res.data.topGainers.length > 0) {
+            setTrendingStocks(res.data.topGainers.map(t => t.symbol).slice(0, 6));
+          }
+        }).catch(err => console.error(err));
+    }
+  }, [isOpen, user]);
 
   const handleSearch = async (e) => {
     const val = e.target.value;
@@ -44,7 +58,9 @@ const AddStockModal = ({ isOpen, onClose, onAdded }) => {
     try {
       const res = await axios.get(`http://localhost:5000/api/market/${symbol}`);
       if (res.data && res.data.currentPrice) handlePriceChange(res.data.currentPrice.toString());
-    } catch (err) { }
+    } catch (err) {
+      console.warn("Price fetch skipped:", err.message);
+    }
   };
 
   const handleQuantityChange = (val) => {
@@ -87,6 +103,7 @@ const AddStockModal = ({ isOpen, onClose, onAdded }) => {
       try {
         await axios.get(`http://localhost:5000/api/market/${ticker}`);
       } catch (err) {
+        console.warn(err.message);
         setError('Failed to fetch price ❌, Invalid ticker ❌');
         setLoading(false);
         return;
@@ -105,6 +122,7 @@ const AddStockModal = ({ isOpen, onClose, onAdded }) => {
       onClose();
       setTicker(''); setQuantity(''); setBuyPrice(''); setTotalInvestment(''); setSearchQuery('');
     } catch (err) {
+      console.error(err);
       setError('Failed to add stock ❌');
     } finally {
       setLoading(false);
@@ -153,7 +171,7 @@ const AddStockModal = ({ isOpen, onClose, onAdded }) => {
                 <TrendingUp size={12} className="text-blue-400" /> Trending Stocks
               </label>
               <div className="flex flex-wrap gap-2">
-                {['AAPL', 'NVDA', 'MSFT', 'RELIANCE.BSE', 'TCS.BSE', 'HDFCBANK.BSE'].map(sym => (
+                {trendingStocks.map(sym => (
                   <button 
                     key={sym} 
                     type="button" 

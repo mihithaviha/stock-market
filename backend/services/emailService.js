@@ -1,13 +1,10 @@
 const nodemailer = require('nodemailer');
 
-// In production, instantiate this with real SMTP like SendGrid/Gmail App Password
 const transporter = nodemailer.createTransport({
-  host: "smtp.ethereal.email",
-  port: 587,
-  secure: false, // true for 465, false for other ports
+  service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER || 'mock@ethereal.email', 
-    pass: process.env.EMAIL_PASS || 'mockpassword', 
+    user: process.env.EMAIL_USER || 'mock@gmail.com',
+    pass: process.env.EMAIL_PASS || 'mockpassword',
   },
 });
 
@@ -74,7 +71,41 @@ async function sendNewsAlert(userEmail, newsArticle, stockTicker) {
     if (process.env.EMAIL_USER && process.env.EMAIL_USER !== 'mock@ethereal.email') {
        await transporter.sendMail({ from: '"PortfolioPro" <alerts@portfoliopro.com>', to: userEmail, subject: `Smart Alert: ${stockTicker} is in the news`, html });
     }
-  } catch(e) {}
+  } catch(e) {
+    console.warn("Email omitted or config missing:", e.message || 'No config');
+  }
 }
 
-module.exports = { sendDailyReport, sendNewsAlert };
+async function sendSuggestionsEmail(userEmail, trendingStocks) {
+  const trendingHtmlItems = trendingStocks.map(stock => 
+    `<li><strong>${stock.symbol}</strong> - ${stock.name}</li>`
+  ).join('');
+
+  const html = `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 10px;">
+        <h2 style="color: #0f172a;">Portfolio<span style="color: #3b82f6;">Pro</span> Suggestions</h2>
+        <p style="font-size: 16px;">Hello,</p>
+        <p style="font-size: 16px;">We noticed you haven't added any stocks to your portfolio yet! Here are some trending stocks you might be interested in:</p>
+        <ul style="background-color: #f8fafc; padding: 15px 15px 15px 35px; border-radius: 8px; margin: 20px 0;">
+          ${trendingHtmlItems.length > 0 ? trendingHtmlItems : '<li><em>No trending stocks available right now.</em></li>'}
+        </ul>
+        <div style="font-size: 14px; color: #64748b; margin-top: 30px; text-align: center;">
+          Sent automatically by PortfolioPro
+        </div>
+      </div>
+  `;
+  
+  try {
+    console.log("-----------------------------------------");
+    console.log(`[SUGGESTIONS EMAIL TO: ${userEmail}]`);
+    console.log("-----------------------------------------");
+    
+    if (process.env.EMAIL_USER && process.env.EMAIL_USER !== 'mock@ethereal.email') {
+       await transporter.sendMail({ from: '"PortfolioPro" <alerts@portfoliopro.com>', to: userEmail, subject: 'Your Daily Stock Suggestions', html });
+    }
+  } catch(e) {
+    console.warn("Email omitted or config missing:", e.message || 'No config');
+  }
+}
+
+module.exports = { sendDailyReport, sendNewsAlert, sendSuggestionsEmail };

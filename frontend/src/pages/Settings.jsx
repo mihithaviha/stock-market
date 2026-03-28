@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import { Settings as SettingsIcon, Bell, Moon, Shield, Save } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -6,6 +7,26 @@ const Settings = () => {
   const { user } = useAuth();
   const [emailAlerts, setEmailAlerts] = useState(true);
   const [newsAlerts, setNewsAlerts] = useState(true);
+  const [alertTime, setAlertTime] = useState('17:00');
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Fetch preferences on load
+  React.useEffect(() => {
+     axios.get('http://localhost:5000/api/user/preferences', { headers: { 'x-user-id': user?.id || 'mock-id' } })
+          .then(res => {
+             if (res.data) {
+                if (res.data.alert_time) setAlertTime(res.data.alert_time);
+             }
+          }).catch(console.error);
+  }, [user]);
+
+  const handleSave = async () => {
+     setIsSaving(true);
+     try {
+       await axios.post('http://localhost:5000/api/user/preferences', { alert_time: alertTime }, { headers: { 'x-user-id': user?.id || 'mock-id' } });
+       alert('Preferences saved successfully!');
+     } catch(e) { console.error(e); } finally { setIsSaving(false); }
+  };
 
   return (
     <div className="p-8 max-w-4xl mx-auto font-sans text-slate-50">
@@ -29,7 +50,7 @@ const Settings = () => {
                </div>
                <div>
                   <div className="font-medium text-slate-200">{user?.email || 'mock@example.com'}</div>
-                  <div className="text-sm text-slate-500">Authenticated via Secure Supabase Link</div>
+                  <div className="text-sm text-slate-500">Standard User Account</div>
                </div>
             </div>
             <div className="mt-6 flex justify-end">
@@ -45,11 +66,19 @@ const Settings = () => {
                <div className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-slate-800/50">
                   <div>
                     <div className="font-bold text-slate-200">Daily Portfolio Email Digest</div>
-                    <div className="text-sm text-slate-400">Receive an email every day at 5:00 PM with your summary PnL.</div>
+                    <div className="text-sm text-slate-400">Receive an email every day with your summary PnL.</div>
                   </div>
-                  <button onClick={() => setEmailAlerts(!emailAlerts)} className={`w-12 h-6 rounded-full transition-colors relative ${emailAlerts ? 'bg-indigo-500' : 'bg-slate-700'}`}>
-                    <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${emailAlerts ? 'translate-x-7' : 'translate-x-1'}`} />
-                  </button>
+                  <div className="flex items-center gap-4">
+                    <input 
+                      type="time" 
+                      value={alertTime} 
+                      onChange={(e) => setAlertTime(e.target.value)}
+                      className="bg-slate-900 border border-slate-700 rounded-md px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
+                    />
+                    <button onClick={() => setEmailAlerts(!emailAlerts)} className={`w-12 h-6 rounded-full transition-colors relative ${emailAlerts ? 'bg-indigo-500' : 'bg-slate-700'}`}>
+                      <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${emailAlerts ? 'translate-x-7' : 'translate-x-1'}`} />
+                    </button>
+                  </div>
                </div>
 
                <div className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-slate-800/50">
@@ -66,7 +95,7 @@ const Settings = () => {
 
          <div className="flex justify-end gap-3 mt-8">
             <button className="px-6 py-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 font-medium transition-colors">Discard</button>
-            <button className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-white font-medium flex items-center gap-2 transition-colors"><Save size={18}/> Save Changes</button>
+            <button onClick={handleSave} disabled={isSaving} className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-xl text-white font-medium flex items-center gap-2 transition-colors"><Save size={18}/> {isSaving ? 'Saving...' : 'Save Changes'}</button>
          </div>
       </div>
     </div>
