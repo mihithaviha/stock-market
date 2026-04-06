@@ -50,7 +50,8 @@ async function getStockNews(ticker) {
         link: n.link,
         publisher: n.publisher,
         providerPublishTime: n.providerPublishTime,
-        sentiment
+        sentiment,
+        relatedTickers: n.relatedTickers || []
       };
     }));
   } catch (error) {
@@ -84,12 +85,12 @@ async function getStockFinancials(ticker) {
     const fd = summary.financialData || {};
     return {
       ticker,
-      revenueGrowth: fd.revenueGrowth || 0,
-      profitMargins: fd.profitMargins || 0,
-      operatingMargins: fd.operatingMargins || 0,
-      returnOnEquity: fd.returnOnEquity || 0,
-      totalCash: fd.totalCash || 0,
-      totalDebt: fd.totalDebt || 0,
+      revenueGrowth: fd.revenueGrowth !== undefined ? fd.revenueGrowth : null,
+      profitMargins: fd.profitMargins !== undefined ? fd.profitMargins : null,
+      operatingMargins: fd.operatingMargins !== undefined ? fd.operatingMargins : null,
+      returnOnEquity: fd.returnOnEquity !== undefined ? fd.returnOnEquity : null,
+      totalCash: fd.totalCash !== undefined ? fd.totalCash : null,
+      totalDebt: fd.totalDebt !== undefined ? fd.totalDebt : null,
       recommendationKey: fd.recommendationKey || 'none'
     };
   } catch (e) {

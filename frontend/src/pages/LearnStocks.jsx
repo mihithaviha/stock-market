@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { BookOpen, TrendingUp, ShieldAlert, GraduationCap, DollarSign, PieChart, Lightbulb, Bot, Send, User, X } from 'lucide-react';
+import { BookOpen, TrendingUp, ShieldAlert, GraduationCap, DollarSign, PieChart, Lightbulb, Bot, Send, User, X, Lock } from 'lucide-react';
 
 const conceptsOfTheDay = [
   { title: "Bull vs. Bear Market", desc: "A Bull market is when the economy is doing well and stock prices are rising. A Bear market occurs when the economy is struggling and stocks are falling.", color: "text-amber-400", bg: "bg-amber-500/20" },
@@ -21,6 +21,19 @@ const LearnStocks = () => {
   const [chatOpen, setChatOpen] = useState(false);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  const handleUpgrade = async () => {
+    try {
+      const { data } = await axios.post('http://localhost:5000/api/stripe/create-checkout-session', {}, {
+         headers: { 'x-user-id': user?.id || 'mock-id-123' } // Or Bearer token when fully migrated
+      });
+      if (data.url) {
+         window.location.href = data.url;
+      }
+    } catch(e) {
+      console.error("Upgrade failed:", e);
+    }
+  };
   const [messages, setMessages] = useState([
     { role: 'assistant', content: "Hi! I'm your Academy AI Tutor. Ask me any basic question about the stock market, terms, or how trading works!" }
   ]);
@@ -100,8 +113,21 @@ const LearnStocks = () => {
             </div>
          </div>
 
-         <div className="space-y-6">
-            <div className="bg-slate-900 border-t-4 border-t-amber-500 border-x-slate-800 border-b-slate-800 p-8 rounded-b-3xl shadow-xl">
+         <div className="space-y-6 relative">
+            {(!user?.plan_type || user.plan_type === 'FREE') && (
+              <div className="absolute inset-0 z-20 backdrop-blur-sm bg-slate-950/60 rounded-b-3xl flex flex-col items-center justify-center p-8 text-center border border-amber-500/30">
+                 <div className="bg-amber-500 text-slate-950 p-4 rounded-full mb-4 shadow-lg shadow-amber-500/20">
+                    <Lock size={32} />
+                 </div>
+                 <h3 className="text-2xl font-bold text-white mb-2">Premium Content Locked</h3>
+                 <p className="text-slate-300 mb-6 max-w-sm">Upgrade to Premium to unlock advanced trading strategies, unlimited portfolio tracking, and real-time live market data.</p>
+                 <button onClick={handleUpgrade} className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 px-8 rounded-full transition-transform hover:scale-105 shadow-xl shadow-amber-500/20">
+                    Upgrade Now - $9.99/mo
+                 </button>
+              </div>
+            )}
+            
+            <div className={`bg-slate-900 border-t-4 border-t-amber-500 border-x-slate-800 border-b-slate-800 p-8 rounded-b-3xl shadow-xl transition-opacity ${(!user?.plan_type || user.plan_type === 'FREE') ? 'opacity-30 pointer-events-none select-none' : ''}`}>
                <h2 className="text-2xl font-bold mb-6 flex items-center gap-3"><DollarSign className="text-amber-400"/> 3 Golden Investing Tips</h2>
                
                <div className="space-y-6">

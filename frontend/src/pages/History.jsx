@@ -1,12 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { History as HistoryIcon, TrendingUp, TrendingDown, Clock, Activity, Target, Award } from 'lucide-react';
+import { useWebSocket } from '../context/WebSocketContext';
+import { History as HistoryIcon, TrendingUp, TrendingDown, Clock, Activity, Target, Award, Eye } from 'lucide-react';
 
 const History = () => {
   const { user } = useAuth();
+  const { livePrices, subscribeToTicker } = useWebSocket();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (history.length > 0) {
+       history.forEach(h => {
+          if (h.ticker) subscribeToTicker(h.ticker);
+       });
+    }
+  }, [history, subscribeToTicker]);
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -69,6 +79,7 @@ const History = () => {
                   <th className="p-5 font-semibold text-right">Qty</th>
                   <th className="p-5 font-semibold text-right">Buy Price</th>
                   <th className="p-5 font-semibold text-right">Sell Price</th>
+                  <th className="p-5 font-semibold text-right text-indigo-300">Live Price (Now)</th>
                   <th className="p-5 font-semibold text-right">Realized PnL</th>
                 </tr>
               </thead>
@@ -89,6 +100,9 @@ const History = () => {
                       <td className="p-5 text-right font-medium text-slate-300">{h.quantity}</td>
                       <td className="p-5 text-right text-slate-400">₹{h.buy_price.toFixed(2)}</td>
                       <td className="p-5 text-right font-medium text-slate-200">₹{h.sell_price.toFixed(2)}</td>
+                      <td className="p-5 text-right font-bold text-indigo-400">
+                        {livePrices[h.ticker] ? `₹${livePrices[h.ticker].toFixed(2)}` : 'Wait...'}
+                      </td>
                       <td className="p-5 text-right">
                         <div className={`font-bold text-lg flex items-center justify-end gap-1 ${isProfitable ? 'text-emerald-400' : 'text-rose-400'}`}>
                           {isProfitable ? <TrendingUp size={18}/> : <TrendingDown size={18}/>}
@@ -102,7 +116,7 @@ const History = () => {
                   );
                 })}
                 {history.length === 0 && (
-                  <tr><td colSpan="5" className="p-12 text-center text-slate-400 font-medium">No history found. Your closed positions will appear here.</td></tr>
+                  <tr><td colSpan="6" className="p-12 text-center text-slate-400 font-medium">No history found. Your closed positions will appear here.</td></tr>
                 )}
               </tbody>
             </table>

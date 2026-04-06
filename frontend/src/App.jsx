@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { WebSocketProvider } from './context/WebSocketContext';
 import Auth from './pages/Auth';
 import AdminAuth from './pages/AdminAuth';
 import Layout from './components/Layout';
@@ -10,7 +11,6 @@ import AdminDashboard from './pages/AdminDashboard';
 import History from './pages/History';
 import MarketTrends from './pages/MarketTrends';
 import NewsAlerts from './pages/NewsAlerts';
-import StockBot from './pages/StockBot';
 import LearnStocks from './pages/LearnStocks';
 import Settings from './pages/Settings';
 
@@ -47,7 +47,6 @@ function AppRoutes() {
         <Route path="history" element={<History />} />
         <Route path="market-trends" element={<MarketTrends />} />
         <Route path="news-alerts" element={<NewsAlerts />} />
-        <Route path="ai-assistant" element={<StockBot />} />
         <Route path="learn-stocks" element={<LearnStocks />} />
         <Route path="settings" element={<Settings />} />
       </Route>
@@ -58,12 +57,27 @@ function AppRoutes() {
   );
 }
 
+import { Toaster } from 'react-hot-toast';
+
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
+      <WebSocketProvider>
+        <BrowserRouter>
+          <AppRoutes />
+          <Toaster 
+            position="bottom-center" 
+            toastOptions={{
+              style: {
+                background: '#1e293b',
+                color: '#f8fafc',
+                border: '1px solid #334155',
+                borderRadius: '12px'
+              }
+            }} 
+          />
+        </BrowserRouter>
+      </WebSocketProvider>
     </AuthProvider>
   );
 }

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { useWebSocket } from '../context/WebSocketContext';
 import { TrendingUp, TrendingDown, Activity, DollarSign, Search, AlertTriangle, CheckCircle } from 'lucide-react';
 
 const MarketTrends = () => {
   const { user } = useAuth();
+  const { livePrices, subscribeToTicker } = useWebSocket();
   const [trends, setTrends] = useState({ topGainers: [], topLosers: [], mostActive: [] });
   const [loading, setLoading] = useState(true);
   
@@ -23,6 +25,12 @@ const MarketTrends = () => {
     fetchTrends();
     fetchFinancials(searchTicker);
   }, []); // eslint-disable-line
+
+  useEffect(() => {
+     // Subscribe to all trend tickers to get live prices
+     const allTickers = [...trends.topGainers, ...trends.topLosers, ...trends.mostActive].map(t => t.symbol);
+     allTickers.forEach(t => subscribeToTicker(t));
+  }, [trends, subscribeToTicker]);
 
   const fetchFinancials = async (ticker) => {
     if (!ticker) return;
@@ -46,20 +54,28 @@ const MarketTrends = () => {
          {label}
        </h2>
        <div className="space-y-3">
-          {list.map((q, i) => (
+          {list.map((q, i) => {
+             const livePrice = livePrices[q.symbol] || q.price;
+             const diff = livePrice - q.price;
+             // Calculate accurate current percentage based on live price over the base open price
+             // We estimate base by doing q.price / (1 + q.changePercent/100) (not perfect but gets the live shift)
+             const basePrice = q.price / (1 + (q.changePercent/100));
+             const liveChangePercent = basePrice > 0 ? ((livePrice - basePrice) / basePrice) * 100 : q.changePercent;
+             
+             return (
              <div key={i} className="flex justify-between items-center p-3 bg-slate-950 border border-slate-800/50 rounded-xl hover:bg-slate-800 transition-colors cursor-pointer" onClick={() => { setSearchTicker(q.symbol); fetchFinancials(q.symbol); }}>
                 <div>
                    <div className="font-bold text-slate-100">{q.symbol}</div>
                    <div className="text-xs text-slate-500 truncate max-w-[120px]">{q.name || 'Company'}</div>
                 </div>
                 <div className="text-right">
-                   <div className="font-medium text-slate-200">${q.price.toFixed(2)}</div>
-                   <div className={`text-sm font-bold ${q.changePercent >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                     {q.changePercent > 0 ? '+' : ''}{q.changePercent.toFixed(2)}%
+                   <div className="font-medium text-slate-200">${livePrice.toFixed(2)}</div>
+                   <div className={`text-sm font-bold ${liveChangePercent >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                     {liveChangePercent > 0 ? '+' : ''}{liveChangePercent.toFixed(2)}%
                    </div>
                 </div>
              </div>
-          ))}
+          )})}
           {list.length === 0 && <div className="text-slate-500 text-sm py-4">No data available.</div>}
        </div>
     </div>

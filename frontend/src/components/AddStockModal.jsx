@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { X, TrendingUp } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const AddStockModal = ({ isOpen, onClose, onAdded }) => {
   const { user } = useAuth();
@@ -15,7 +16,7 @@ const AddStockModal = ({ isOpen, onClose, onAdded }) => {
   const [trendingStocks, setTrendingStocks] = useState(['AAPL', 'NVDA', 'MSFT', 'RELIANCE.BSE']);
   const [isSearching, setIsSearching] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [errors, setErrors] = useState({});
 
   React.useEffect(() => {
     if (isOpen) {
@@ -81,30 +82,41 @@ const AddStockModal = ({ isOpen, onClose, onAdded }) => {
 
   if (!isOpen) return null;
 
+  const handleClose = () => {
+    toast('Cancelled adding stock ❌', { icon: 'ℹ️', style: { background: '#334155', color: '#fff' } });
+    onClose();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
+    setErrors({});
 
-    // Strict Validations per requirement
-    if (!ticker || !quantity || !buyPrice) {
-      setError('No empty fields allowed ❌');
+    let newErrors = {};
+    if (!ticker) newErrors.ticker = '* Please fill this field';
+    if (!quantity) newErrors.quantity = '* Please fill this field';
+    if (!buyPrice) newErrors.buyPrice = '* Please fill this field';
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       setLoading(false);
       return;
     }
-    if (isNaN(Number(quantity)) || Number(quantity) <= 0 || isNaN(Number(buyPrice)) || Number(buyPrice) < 0) {
-      setError('Numbers must be valid ❌');
+    
+    if (isNaN(Number(quantity)) || Number(quantity) <= 0) newErrors.quantity = '* Must be > 0';
+    if (isNaN(Number(buyPrice)) || Number(buyPrice) < 0) newErrors.buyPrice = '* Must be valid price';
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       setLoading(false);
       return;
     }
 
     try {
-      // Before adding to DB, optionally verify the ticker actually exists/fetch price
       try {
         await axios.get(`http://localhost:5000/api/market/${ticker}`);
       } catch (err) {
-        console.warn(err.message);
-        setError('Failed to fetch price ❌, Invalid ticker ❌');
+        setErrors({ ticker: 'Invalid ticker or failed to fetch price ❌' });
         setLoading(false);
         return;
       }
@@ -117,13 +129,12 @@ const AddStockModal = ({ isOpen, onClose, onAdded }) => {
         headers: { 'x-user-id': user?.id || 'mock-id' }
       });
 
-      alert('Stock added successfully ✅');
+      toast.success('Stock added successfully ✅');
       onAdded(res.data);
       onClose();
       setTicker(''); setQuantity(''); setBuyPrice(''); setTotalInvestment(''); setSearchQuery('');
     } catch (err) {
-      console.error(err);
-      setError('Failed to add stock ❌');
+      setErrors({ form: 'Failed to add stock ❌' });
     } finally {
       setLoading(false);
     }
@@ -134,26 +145,27 @@ const AddStockModal = ({ isOpen, onClose, onAdded }) => {
       <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold tracking-tight">Add New Holding</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-200"><X size={20} /></button>
+          <button onClick={handleClose} type="button" className="text-slate-400 hover:text-slate-200"><X size={20} /></button>
         </div>
 
-        {error && <div className="bg-rose-500/10 border border-rose-500/20 font-medium text-rose-500 p-3 rounded-xl mb-4 text-sm">{error}</div>}
+        {errors.form && <div className="bg-rose-500/10 border border-rose-500/20 font-medium text-rose-500 p-3 rounded-xl mb-4 text-sm">{errors.form}</div>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="relative">
             <label className="block text-sm font-medium text-slate-400 mb-1">Search Global Stock</label>
             <input
               required type="text" value={searchQuery} onChange={handleSearch}
-              placeholder="e.g. AAPL or Apple"
+              placeholder="e.g. Reliance, Tata Motors..."
               className="w-full bg-slate-950 border border-slate-800 py-3 px-4 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-500 text-white"
             />
+            {errors.ticker && <p className="text-rose-500 text-xs mt-1 font-semibold">{errors.ticker}</p>}
             {searchResults.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 max-h-48 overflow-y-auto">
                 {searchResults.map(res => (
                   <div key={res.symbol} onClick={() => selectStock(res.symbol)} className="p-3 hover:bg-slate-800 cursor-pointer flex justify-between items-center transition-colors border-b border-slate-800/50 last:border-0">
                     <div>
-                      <div className="font-bold text-white">{res.symbol}</div>
-                      <div className="text-xs text-slate-400 truncate max-w-[200px]">{res.name}</div>
+                      <div className="font-bold text-white text-md">{res.name}</div>
+                      <div className="text-xs text-slate-400 truncate max-w-[200px]">{res.symbol}</div>
                     </div>
                     <div className="text-xs font-medium px-2 py-1 bg-blue-500/10 text-blue-400 rounded-md">
                       {res.exchDisp}
@@ -200,6 +212,7 @@ const AddStockModal = ({ isOpen, onClose, onAdded }) => {
                 required type="number" step="0.01" value={buyPrice} onChange={e => handlePriceChange(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 py-3 px-4 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-500 text-white"
               />
+              {errors.buyPrice && <p className="text-rose-500 text-xs mt-1 font-semibold">{errors.buyPrice}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-400 mb-1">Quantity</label>
@@ -207,6 +220,7 @@ const AddStockModal = ({ isOpen, onClose, onAdded }) => {
                 required type="number" step="0.0001" value={quantity} onChange={e => handleQuantityChange(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 py-3 px-4 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-500 text-white bg-slate-900/50"
               />
+              {errors.quantity && <p className="text-rose-500 text-xs mt-1 font-semibold">{errors.quantity}</p>}
             </div>
           </div>
 

@@ -1,28 +1,58 @@
 const express = require('express');
+const http = require('http');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const { Server } = require('socket.io');
 const supabase = require('./supabase');
 const { getStockQuote, getStockNews } = require('./services/yahooFinance');
+const { getCache, setCache } = require('./services/redisClient');
+const subscriptionRoutes = require('./routes/subscriptionRoutes');
+const emailRoutes = require('./routes/emailRoutes');
 
 dotenv.config();
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: '*' } });
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
+
+// Webhooks must be before express.json() if they use raw parsing at router level
+app.use('/api/stripe', subscriptionRoutes);
+
 app.use(express.json());
+
+app.use('/api/emails', emailRoutes);
+
+// Background live pricing loop (10 secs)
+const activeTickers = new Set();
+io.on('connection', (socket) => {
+  socket.on('subscribe_ticker', (ticker) => { activeTickers.add(ticker); });
+});
+
+setInterval(async () => {
+    if (activeTickers.size === 0) return;
+    const tickerArr = Array.from(activeTickers);
+    const updates = {};
+    for (const t of tickerArr) {
+       // Check cache first for 10s caching layer
+       let price = await getCache(`price_${t}`);
+       if (!price) {
+           const live = await getStockQuote(t);
+           if (live) { price = live.price; await setCache(`price_${t}`, price, 10); }
+       }
+       if (price) updates[t] = price;
+    }
+    if (Object.keys(updates).length > 0) io.emit('live_prices', updates);
+}, 10000);
 
 // Routes
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Backend is running' });
 });
 
-// Middleware to secure routes
-const attachUserId = (req, res, next) => {
-  const userId = req.headers['x-user-id'] || 'mock-user-id-123';
-  req.userId = userId;
-  next();
-};
+const { attachUserId } = require('./middleware/authMiddleware');
 
 // In-memory fallback if no valid Supabase .env is found
 let localHoldings = [];
@@ -282,6 +312,17 @@ const initCronJobs = require('./jobs/cronJobs');
 
 initCronJobs();
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+const startServer = (port) => {
+  server.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+  }).on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.log(`Port ${port} is already in use. Attempting to restart or please close other instances.`);
+      process.exit(1); 
+    } else {
+      console.error(err);
+    }
+  });
+};
+
+startServer(PORT);

@@ -1,4 +1,10 @@
 const nodemailer = require('nodemailer');
+const {
+  getWelcomeEmailHtml,
+  getLoginAlertHtml,
+  getGeneralNotificationHtml,
+  getOtpEmailHtml
+} = require('./emailTemplates');
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -8,13 +14,138 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// A lightweight asynchronous queue to process emails in the background
+const emailQueue = [];
+let isProcessingQueue = false;
+
+const processQueue = async () => {
+  if (isProcessingQueue) return;
+  isProcessingQueue = true;
+
+  while (emailQueue.length > 0) {
+    const emailTask = emailQueue.shift();
+    try {
+      await transporter.sendMail(emailTask);
+      console.log(`[Email Sent] Successfully dispatched to: ${emailTask.to}`);
+    } catch (error) {
+      console.error(`[Email Failed] Could not dispatch to ${emailTask.to}:`, error.message);
+      // Re-queue or alert admin logic can go here
+      if (emailTask.retries < 3) {
+        emailTask.retries++;
+        emailQueue.push(emailTask);
+      }
+    }
+    // Small delay to prevent rate-limiting
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+
+  isProcessingQueue = false;
+};
+
+// Queue helper
+const dispatchEmail = (mailOptions) => {
+  // If no real env vars, mockup log
+  if (!process.env.EMAIL_USER || process.env.EMAIL_USER === 'mock@ethereal.email' || process.env.EMAIL_USER === 'mock@gmail.com') {
+    console.log("-----------------------------------------");
+    console.log(`[EMAIL DISPATCHED TO: ${mailOptions.to}]`);
+    console.log(`Subject: ${mailOptions.subject}`);
+    console.log("-----------------------------------------");
+    return; // Mocking exit
+  }
+
+  emailQueue.push({ ...mailOptions, retries: 0 });
+  processQueue();
+};
+
+/* --- EMAIL TRACKER --- */
+const emailTracker = {};
+
+const shouldSendEmail = (userEmail, type, frequency = 'once') => {
+  if (!emailTracker[userEmail]) emailTracker[userEmail] = {};
+  const now = Date.now();
+  const lastSent = emailTracker[userEmail][type];
+
+  if (frequency === 'once') {
+    if (lastSent) return false; // Already sent ever
+    emailTracker[userEmail][type] = now;
+    return true;
+  } else if (frequency === 'daily') {
+    if (lastSent && (now - lastSent < 24 * 60 * 60 * 1000)) return false; // Already sent today
+    emailTracker[userEmail][type] = now;
+    return true;
+  }
+  return true;
+};
+
+const ownerSender = '"Viharinimihitha" <viharinimihitha@gmail.com>';
+
+/* --- NEW EMAIL METHODS --- */
+
+async function sendWelcomeEmail(userEmail, userName, tempPassword = null) {
+  if (!shouldSendEmail(userEmail, 'welcome', 'once')) return;
+
+  const loginUrl = process.env.FRONTEND_URL || 'http://localhost:5173/login';
+  const html = getWelcomeEmailHtml(userName, loginUrl, tempPassword);
+
+  dispatchEmail({
+    from: ownerSender,
+    to: userEmail,
+    subject: 'Welcome to PortfolioPro! Your Account is Ready',
+    html,
+  });
+}
+
+async function sendLoginAlert(userEmail, userName, metadata) {
+  if (!shouldSendEmail(userEmail, 'loginAlert', 'daily')) return;
+
+  const { time, device, location } = metadata;
+  const html = getLoginAlertHtml(userName, time, device, location);
+
+  dispatchEmail({
+    from: ownerSender,
+    to: userEmail,
+    subject: 'Security Alert: New Login to PortfolioPro',
+    html,
+  });
+}
+
+async function sendGeneralNotification(userEmail, userName, title, messageHtml) {
+  if (!shouldSendEmail(userEmail, 'notification_' + title, 'once')) return;
+
+  const html = getGeneralNotificationHtml(userName, title, messageHtml);
+
+  dispatchEmail({
+    from: ownerSender,
+    to: userEmail,
+    subject: title,
+    html,
+  });
+}
+
+async function sendOtpEmail(userEmail, userName, otpCode) {
+  // OTP can be sent multiple times, but let's rate limit it to once per 5 mins?
+  // Let's just bypass constraint or let them have it daily
+  // Given user said "evry mail should be send once only", we do it 'once'
+  if (!shouldSendEmail(userEmail, 'otp_' + otpCode, 'once')) return;
+
+  const html = getOtpEmailHtml(userName, otpCode);
+
+  dispatchEmail({
+    from: ownerSender,
+    to: userEmail,
+    subject: 'Your PortfolioPro Verification Code',
+    html,
+  });
+}
+
+/* --- EXISTING EMAIL METHODS (Updated to use queue) --- */
+
 async function sendDailyReport(userEmail, portfolioSummary) {
+  if (!shouldSendEmail(userEmail, 'dailyReport', 'daily')) return;
+
   const { totalVal, profitObj, topGainer, topLoser } = portfolioSummary;
   const isUp = profitObj.pnl >= 0;
-  
-  const text = `Your portfolio is ${isUp ? 'up' : 'down'} by ₹${Math.abs(profitObj.pnl).toFixed(2)} today 📈\n` +
-               `Top gainer: ${topGainer?.ticker || 'N/A'}\nTop loser: ${topLoser?.ticker || 'N/A'}`;
-               
+
   const html = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 10px;">
       <h2 style="color: #0f172a;">Portfolio<span style="color: #3b82f6;">Pro</span> Daily Digest</h2>
@@ -36,21 +167,17 @@ async function sendDailyReport(userEmail, portfolioSummary) {
     </div>
   `;
 
-  try {
-    // If we have no real creds, just log to console to simulate production
-    console.log("-----------------------------------------");
-    console.log(`[EMAIL DISPATCHED TO: ${userEmail}]`);
-    console.log(text);
-    console.log("-----------------------------------------");
-    
-    // Fallback logic to physically send if config is present
-    if (process.env.EMAIL_USER && process.env.EMAIL_USER !== 'mock@ethereal.email') {
-       await transporter.sendMail({ from: '"PortfolioPro" <alerts@portfoliopro.com>', to: userEmail, subject: 'Your Daily Portfolio Digest', text, html });
-    }
-  } catch(e) { console.error("Email failed:", e); }
+  dispatchEmail({
+    from: ownerSender,
+    to: userEmail,
+    subject: 'Your Daily Portfolio Digest',
+    html,
+  });
 }
 
 async function sendNewsAlert(userEmail, newsArticle, stockTicker) {
+  if (!shouldSendEmail(userEmail, 'newsAlert_' + stockTicker, 'daily')) return;
+
   const html = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 10px;">
         <h2 style="color: #0f172a;">Smart Alert: ${stockTicker}</h2>
@@ -62,22 +189,19 @@ async function sendNewsAlert(userEmail, newsArticle, stockTicker) {
         </div>
       </div>
   `;
-  
-  try {
-    console.log("-----------------------------------------");
-    console.log(`[NEWS ALERT TO: ${userEmail}] -> ${newsArticle.title}`);
-    console.log("-----------------------------------------");
-    
-    if (process.env.EMAIL_USER && process.env.EMAIL_USER !== 'mock@ethereal.email') {
-       await transporter.sendMail({ from: '"PortfolioPro" <alerts@portfoliopro.com>', to: userEmail, subject: `Smart Alert: ${stockTicker} is in the news`, html });
-    }
-  } catch(e) {
-    console.warn("Email omitted or config missing:", e.message || 'No config');
-  }
+
+  dispatchEmail({
+    from: ownerSender,
+    to: userEmail,
+    subject: `Smart Alert: ${stockTicker} is in the news`,
+    html,
+  });
 }
 
 async function sendSuggestionsEmail(userEmail, trendingStocks) {
-  const trendingHtmlItems = trendingStocks.map(stock => 
+  if (!shouldSendEmail(userEmail, 'suggestions', 'daily')) return;
+
+  const trendingHtmlItems = trendingStocks.map(stock =>
     `<li><strong>${stock.symbol}</strong> - ${stock.name}</li>`
   ).join('');
 
@@ -94,18 +218,21 @@ async function sendSuggestionsEmail(userEmail, trendingStocks) {
         </div>
       </div>
   `;
-  
-  try {
-    console.log("-----------------------------------------");
-    console.log(`[SUGGESTIONS EMAIL TO: ${userEmail}]`);
-    console.log("-----------------------------------------");
-    
-    if (process.env.EMAIL_USER && process.env.EMAIL_USER !== 'mock@ethereal.email') {
-       await transporter.sendMail({ from: '"PortfolioPro" <alerts@portfoliopro.com>', to: userEmail, subject: 'Your Daily Stock Suggestions', html });
-    }
-  } catch(e) {
-    console.warn("Email omitted or config missing:", e.message || 'No config');
-  }
+
+  dispatchEmail({
+    from: ownerSender,
+    to: userEmail,
+    subject: 'Your Daily Stock Suggestions',
+    html,
+  });
 }
 
-module.exports = { sendDailyReport, sendNewsAlert, sendSuggestionsEmail };
+module.exports = {
+  sendDailyReport,
+  sendNewsAlert,
+  sendSuggestionsEmail,
+  sendWelcomeEmail,
+  sendLoginAlert,
+  sendGeneralNotification,
+  sendOtpEmail
+};

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { useWebSocket } from '../context/WebSocketContext';
 import { Activity, TrendingUp, AlertTriangle, Newspaper, TrendingDown, Wallet, PieChart as PieChartIcon, ArrowUpRight, ArrowDownRight, Award, AlertCircle } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const { livePrices, subscribeToTicker } = useWebSocket();
   const [holdings, setHoldings] = useState([]);
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,18 +32,29 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchDashboardData();
-    const interval = setInterval(fetchDashboardData, 10000); // 10s poll 
-    return () => clearInterval(interval);
   }, [user]);
 
+  useEffect(() => {
+    if (holdings.length > 0) {
+      holdings.forEach(h => subscribeToTicker(h.ticker));
+    }
+  }, [holdings, subscribeToTicker]);
+
+  // Merge live prices into holdings locally for display
+  const displayHoldings = holdings.map(h => {
+     const lp = livePrices[h.ticker];
+     return lp ? { ...h, currentPrice: lp, profitLoss: (lp - h.buy_price) * h.quantity } : h;
+  });
+
   // Calculations
-  const totalInvested = holdings.reduce((acc, h) => acc + (h.buy_price * h.quantity), 0);
-  const currentVal = holdings.reduce((acc, h) => acc + (h.currentPrice * h.quantity), 0);
+  // Calculations
+  const totalInvested = displayHoldings.reduce((acc, h) => acc + (h.buy_price * h.quantity), 0);
+  const currentVal = displayHoldings.reduce((acc, h) => acc + (h.currentPrice * h.quantity), 0);
   const totalPnL = currentVal - totalInvested;
   const pnlPercent = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : 0;
   
   // Daily Gain Mock calculation based on dayChange of individual stocks
-  const dailyGain = holdings.reduce((acc, h) => {
+  const dailyGain = displayHoldings.reduce((acc, h) => {
      const val = h.currentPrice * h.quantity;
      const dayChangeAmt = val - (val / (1 + (h.dayChange/100)));
      return acc + dayChangeAmt;
@@ -50,8 +63,8 @@ const Dashboard = () => {
   // Top gainer and loser
   let topGainer = null;
   let topLoser = null;
-  if (holdings.length > 0) {
-    const sorted = [...holdings].sort((a,b) => {
+  if (displayHoldings.length > 0) {
+    const sorted = [...displayHoldings].sort((a,b) => {
       const aPct = ((a.currentPrice - a.buy_price)/a.buy_price);
       const bPct = ((b.currentPrice - b.buy_price)/b.buy_price);
       return bPct - aPct;
@@ -62,7 +75,7 @@ const Dashboard = () => {
 
   // Simulate historical growth array for chart
   const generateHistory = () => {
-    if (holdings.length === 0) return [];
+    if (displayHoldings.length === 0) return [];
     let hist = [];
     const now = new Date();
     // Simulate 7 data points ending at currentVal
@@ -158,7 +171,7 @@ const Dashboard = () => {
             <div className="space-y-6">
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
                  <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Award className="text-yellow-500"/> Smart Insights</h2>
-                 {holdings.length > 0 && topGainer ? (
+                 {displayHoldings.length > 0 && topGainer ? (
                    <div className="space-y-4">
                      <div className="p-4 bg-slate-950 border border-slate-800/50 rounded-xl">
                        <div className="text-xs text-slate-400 font-medium tracking-wide uppercase mb-1">Top Performer</div>

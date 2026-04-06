@@ -20,10 +20,39 @@ const Auth = () => {
       if (isLogin) {
         const { error } = await signIn(email, password);
         if (error) throw error;
+        
+        // Trigger login alert email
+        try {
+          await fetch('http://localhost:5000/api/emails/send-login-alert', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              userEmail: email, 
+              userName: email.split('@')[0],
+              metadata: { time: new Date().toLocaleString(), device: 'Web Browser', location: 'Unknown' }
+            })
+          });
+        } catch (mailErr) {
+          console.error('Failed to send login alert:', mailErr);
+        }
       } else {
         const { error } = await signUp(email, password);
         if (error) throw error;
         alert('Check your email for the confirmation link or log in if auto-confirmed!');
+        
+        // Trigger welcome email
+        try {
+          await fetch('http://localhost:5000/api/emails/send-welcome-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              userEmail: email, 
+              userName: email.split('@')[0]
+            })
+          });
+        } catch (mailErr) {
+          console.error('Failed to send welcome email:', mailErr);
+        }
       }
     } catch (err) {
       setError(err.message);

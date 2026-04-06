@@ -4,7 +4,7 @@ import { Shield } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 
 const AdminAuth = () => {
-  const [email, setEmail] = useState('admin@portfoliopro.com'); // Autofill for convenience
+  const [email, setEmail] = useState('viharinimihitha@gmail.com'); // Autofill for convenience
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -20,7 +20,7 @@ const AdminAuth = () => {
     setError('');
     
     // Hard check for mock admin email logic if desired
-    if (email !== 'admin@portfoliopro.com') {
+    if (email !== 'viharinimihitha@gmail.com') {
       setError('You are not authorized for the admin portal.');
       return;
     }
@@ -66,7 +66,7 @@ const AdminAuth = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all shadow-inner"
-              placeholder="admin@portfoliopro.com"
+              placeholder="viharinimihitha@gmail.com"
             />
           </div>
           <div>

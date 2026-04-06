@@ -2,16 +2,36 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { Plus, TrendingUp, TrendingDown } from 'lucide-react';
+import { useWebSocket } from '../context/WebSocketContext';
+import { Plus, TrendingUp, TrendingDown, FileText } from 'lucide-react';
 import AddStockModal from '../components/AddStockModal';
+import toast from 'react-hot-toast';
 
 const Portfolio = () => {
-  const { user } = useAuth();
+  const { user, updateUserPlan } = useAuth();
+  const { livePrices, subscribeToTicker } = useWebSocket();
   const location = useLocation();
   const navigate = useNavigate();
   const [holdings, setHoldings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [expandedRow, setExpandedRow] = useState(null);
+  const [financials, setFinancials] = useState({});
+
+  useEffect(() => {
+    return () => {
+      setExpandedRow(null);
+      setFinancials({}); // Clear prefilled data on navigate/logout
+    };
+  }, []);
+
+  // Check URL for mock premium upgrade success
+  useEffect(() => {
+     if (location.search.includes('mock_success=true')) {
+        updateUserPlan('PREMIUM');
+        navigate('/portfolio', { replace: true });
+     }
+  }, [location]);
 
   useEffect(() => {
     if (location.search.includes('addStock=true')) {
@@ -36,9 +56,27 @@ const Portfolio = () => {
   useEffect(() => {
     setLoading(true);
     fetchPortfolio();
-    const interval = setInterval(fetchPortfolio, 10000); // refresh prices every 10s
-    return () => clearInterval(interval);
+    // No more manual 10s polling, WebSockets handles live updates!
   }, [user]);
+
+  useEffect(() => {
+    if (holdings.length > 0) {
+      holdings.forEach(h => subscribeToTicker(h.ticker));
+    }
+  }, [holdings, subscribeToTicker]);
+
+  const displayHoldings = holdings.map(h => {
+     const lp = livePrices[h.ticker];
+     return lp ? { ...h, currentPrice: lp, profitLoss: (lp - h.buy_price) * h.quantity } : h;
+  });
+
+  const handleCreateOpen = () => {
+     if ((!user?.plan_type || user.plan_type === 'FREE') && displayHoldings.length >= 5) {
+         alert("Free Tier limit reached. Please upgrade to Premium to add unlimited stocks!");
+         return navigate('/learn-stocks');
+     }
+     setIsModalOpen(true);
+  };
 
   const handleAdded = () => {
     fetchPortfolio();
@@ -46,6 +84,9 @@ const Portfolio = () => {
 
   const handleSell = async (holding) => {
     if (window.confirm(`Are you sure you want to exit your position in ${holding.ticker}?`)) {
+      // Optimistic UI update: instantly remove from list to reflect changes visually
+      setHoldings(prev => prev.filter(h => h.id !== holding.id));
+      
       try {
         await axios.post('http://localhost:5000/api/portfolio/sell', {
            id: holding.id,
@@ -54,13 +95,36 @@ const Portfolio = () => {
            quantity: holding.quantity,
            buyPrice: holding.buy_price
         }, { headers: { 'x-user-id': user?.id || 'mock-id' } });
+        toast.success(`Position in ${holding.ticker} exited successfully ✅`);
+      } catch(e) { 
+        console.error("Error selling stock", e); 
+        toast.error('Failed to exit position');
+        // If it fails, refetch to restore the correct state
         fetchPortfolio();
-      } catch(e) { console.error("Error selling stock", e); }
+      }
     }
   };
 
-  const totalInvested = holdings.reduce((acc, h) => acc + (h.buy_price * h.quantity), 0);
-  const currentVal = holdings.reduce((acc, h) => acc + (h.currentPrice * h.quantity), 0);
+  const toggleExpanded = async (ticker) => {
+    if (expandedRow === ticker) {
+      setExpandedRow(null);
+      return;
+    }
+    setExpandedRow(ticker);
+    if (!financials[ticker]) {
+      try {
+        const res = await axios.get(`http://localhost:5000/api/stock/${ticker}/financials`, {
+          headers: { 'x-user-id': user?.id || 'mock-id' }
+        });
+        setFinancials(prev => ({ ...prev, [ticker]: res.data }));
+      } catch (err) {
+        console.error("Failed to fetch financials");
+      }
+    }
+  };
+
+  const totalInvested = displayHoldings.reduce((acc, h) => acc + (h.buy_price * h.quantity), 0);
+  const currentVal = displayHoldings.reduce((acc, h) => acc + (h.currentPrice * h.quantity), 0);
   const totalPnL = currentVal - totalInvested;
   const pnlPercent = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : 0;
 
@@ -71,7 +135,7 @@ const Portfolio = () => {
           <h1 className="text-3xl font-bold tracking-tight">My Holdings</h1>
           <p className="text-slate-400 mt-1">Manage and track your individual positions live.</p>
         </div>
-        <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 px-5 py-2.5 rounded-xl font-medium transition-colors text-white shadow-lg shadow-blue-500/20">
+        <button onClick={handleCreateOpen} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 px-5 py-2.5 rounded-xl font-medium transition-colors text-white shadow-lg shadow-blue-500/20">
           <Plus size={18} /> Add Stock
         </button>
       </div>
@@ -94,17 +158,23 @@ const Portfolio = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/50">
-                {holdings.map((h) => {
+                {displayHoldings.map((h) => {
                   const pnl = h.profitLoss;
                   const pnlPct = ((h.currentPrice - h.buy_price) / h.buy_price) * 100;
                   const isProfitable = pnl >= 0;
                   
                   return (
-                    <tr key={h.id} className="hover:bg-slate-800/30 transition-colors">
-                      <td className="p-5">
-                        <div className="font-bold text-slate-100 text-lg">{h.ticker}</div>
-                        <div className="text-sm text-slate-400 truncate max-w-[150px]">{h.name}</div>
-                      </td>
+                    <React.Fragment key={h.id}>
+                      <tr className="hover:bg-slate-800/30 transition-colors">
+                        <td className="p-5">
+                          <div className="font-bold text-slate-100 text-lg">{h.name}</div>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-sm text-slate-400 truncate max-w-[150px]">{h.ticker}</span>
+                            <button onClick={() => toggleExpanded(h.ticker)} className="text-[10px] font-bold uppercase tracking-wider bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white px-2 py-0.5 rounded transition-colors flex items-center gap-1">
+                               <FileText size={10} /> Financials
+                            </button>
+                          </div>
+                        </td>
                       <td className="p-5 text-right font-medium text-slate-200">{h.quantity}</td>
                       <td className="p-5 text-right text-slate-300">₹{h.buy_price.toFixed(2)}</td>
                       <td className="p-5 text-right font-medium text-slate-100">₹{h.currentPrice.toFixed(2)}</td>
@@ -120,19 +190,48 @@ const Portfolio = () => {
                           {pnlPct > 0 ? '+' : ''}{pnlPct.toFixed(2)}%
                         </div>
                       </td>
-                      <td className="p-5 text-right">
+                      <td className="p-5 text-right flex gap-2 justify-end">
                         <button onClick={() => handleSell(h)} className="text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-500 px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-sm">
                           Exit
                         </button>
                       </td>
                     </tr>
+                    {expandedRow === h.ticker && (
+                      <tr className="bg-slate-900/50">
+                        <td colSpan="7" className="p-5 border-t border-slate-800/50">
+                          {financials[h.ticker] ? (
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                              <div className="bg-slate-950/80 p-4 rounded-xl border border-slate-800">
+                                <span className="text-slate-400 block mb-1 font-medium">Revenue Gr.</span>
+                                {financials[h.ticker].revenueGrowth !== null ? `${(financials[h.ticker].revenueGrowth * 100).toFixed(2)}%` : 'Data Unavailable'}
+                              </div>
+                              <div className="bg-slate-950/80 p-4 rounded-xl border border-slate-800">
+                                <span className="text-slate-400 block mb-1 font-medium">Profit Margin</span>
+                                {financials[h.ticker].profitMargins !== null ? `${(financials[h.ticker].profitMargins * 100).toFixed(2)}%` : 'Data Unavailable'}
+                              </div>
+                              <div className="bg-slate-950/80 p-4 rounded-xl border border-slate-800">
+                                <span className="text-slate-400 block mb-1 font-medium">Op Margin</span>
+                                {financials[h.ticker].operatingMargins !== null ? `${(financials[h.ticker].operatingMargins * 100).toFixed(2)}%` : 'Data Unavailable'}
+                              </div>
+                              <div className="bg-slate-950/80 p-4 rounded-xl border border-slate-800">
+                                <span className="text-slate-400 block mb-1 font-medium">Analyst Rec.</span>
+                                <span className="uppercase text-blue-400 font-bold">{financials[h.ticker].recommendationKey || 'N/A'}</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-slate-400 text-sm animate-pulse">Fetching Quarterly Results...</div>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                    </React.Fragment>
                   );
                 })}
-                {holdings.length === 0 && (
+                {displayHoldings.length === 0 && (
                   <tr><td colSpan="7" className="p-12 text-center text-slate-400 font-medium">No holdings found. Add a stock to get started!</td></tr>
                 )}
               </tbody>
-              {holdings.length > 0 && (
+              {displayHoldings.length > 0 && (
                 <tfoot className="bg-slate-950/40 border-t border-slate-800">
                   <tr>
                     <td colSpan="2" className="p-5 font-bold text-slate-200 text-lg">Portfolio Summary</td>
