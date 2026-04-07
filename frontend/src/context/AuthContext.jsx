@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 const AuthContext = createContext({});
-const API_URL = 'https://stock-market-bm5j.onrender.com/api/auth';
+const API_URL = import.meta.env.VITE_API_URL || 'https://stock-market-bm5j.onrender.com/api/auth';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);

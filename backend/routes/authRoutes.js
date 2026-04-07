@@ -72,11 +72,13 @@ const passport = require('../config/passport');
 
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
-router.get('/google/callback', passport.authenticate('google', { session: false, failureRedirect: 'https://tradezy.vercel.app/auth?error=google_failed' }), (req, res) => {
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://tradezy.vercel.app';
+
+router.get('/google/callback', passport.authenticate('google', { session: false, failureRedirect: `${FRONTEND_URL}/auth?error=google_failed` }), (req, res) => {
   // Successful authentication
   const token = generateToken(req.user._id, req.user.plan_type);
   // Redirect to frontend with token in the URL params
-  res.redirect(`https://tradezy.vercel.app/?token=${token}`);
+  res.redirect(`${FRONTEND_URL}/?token=${token}`);
 });
 
 router.get('/me', async (req, res) => {
