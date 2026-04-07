@@ -3,11 +3,11 @@ const http = require('http');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const { Server } = require('socket.io');
-const supabase = require('./supabase');
 const { getStockQuote, getStockNews } = require('./services/yahooFinance');
 const { getCache, setCache } = require('./services/redisClient');
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
 const emailRoutes = require('./routes/emailRoutes');
+const { sendGeneralNotification } = require('./services/emailService');
 
 dotenv.config();
 
@@ -18,12 +18,24 @@ const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 
-// Webhooks must be before express.json() if they use raw parsing at router level
 app.use('/api/stripe', subscriptionRoutes);
-
 app.use(express.json());
 
+const passport = require('passport');
+app.use(passport.initialize());
+
 app.use('/api/emails', emailRoutes);
+
+const paymentRoutes = require('./routes/paymentRoutes');
+const authRoutes = require('./routes/authRoutes');
+const connectDB = require('./db/connect');
+
+connectDB(process.env.MONGO_URI).then(() => {
+  console.log("Connected to MongoDB");
+}).catch(console.error);
+
+app.use('/api/payment', paymentRoutes);
+app.use('/api/auth', authRoutes);
 
 // Background live pricing loop (10 secs)
 const activeTickers = new Set();
@@ -53,12 +65,7 @@ app.get('/api/health', (req, res) => {
 });
 
 const { attachUserId } = require('./middleware/authMiddleware');
-
-// In-memory fallback if no valid Supabase .env is found
-let localHoldings = [];
-let localHistory = [];
-let localPreferences = {};
-let localIdCounter = 1;
+const User = require('./models/User');
 
 app.post('/api/portfolio/add', attachUserId, async (req, res) => {
   const { ticker, quantity, buyPrice } = req.body;
@@ -67,19 +74,29 @@ app.post('/api/portfolio/add', attachUserId, async (req, res) => {
   }
 
   try {
-    const { data, error } = await supabase
-      .from('holdings')
-      .insert([{ user_id: req.userId, stock_name: ticker.toUpperCase(), quantity, buy_price: buyPrice }])
-      .select();
+    const user = await User.findById(req.userId);
+    user.holdings.push({ ticker: ticker.toUpperCase(), quantity, buyPrice });
+    await user.save();
+    
+    // Get the newly added subdocument
+    const newHolding = user.holdings[user.holdings.length - 1];
+    
+    // Fire off async email alert secretly
+    sendGeneralNotification(
+      user.email,
+      user.first_name || 'Trader',
+      `Stock Purchase Confirmation: ${ticker.toUpperCase()}`,
+      `<div style="font-family:sans-serif; background:#f4f4f4; padding:20px;">
+         <h2 style="color:#0f172a;">Purchase Successful 🚀</h2>
+         <p>You have successfully added <strong>${quantity} shares</strong> of <strong>${ticker.toUpperCase()}</strong> to your portfolio.</p>
+         <p><strong>Average Buy Price:</strong> ₹${buyPrice}</p>
+         <p><strong>Total Capital Invested:</strong> ₹${(quantity * buyPrice).toFixed(2)}</p>
+         <p style="color:#64748b; font-size:12px;">This is an automated transaction receipt from Tradezy.</p>
+       </div>`
+    ).catch(e => console.error("Email Error:", e));
 
-    if (error) throw error;
-    res.status(201).json(data[0]);
+    res.status(201).json({ ...newHolding.toObject(), stock_name: newHolding.ticker });
   } catch (err) {
-    if (err.message && err.message.includes('fetch failed')) {
-      const newHolding = { id: localIdCounter++, user_id: req.userId, stock_name: ticker.toUpperCase(), quantity, buy_price: buyPrice };
-      localHoldings.push(newHolding);
-      return res.status(201).json(newHolding);
-    }
     console.error("Add Stock DB Error:", err.message);
     res.status(500).json({ error: 'Failed to add stock' }); 
   }
@@ -87,18 +104,16 @@ app.post('/api/portfolio/add', attachUserId, async (req, res) => {
 
 app.get('/api/portfolio', attachUserId, async (req, res) => {
   try {
-    const { data: holdings, error } = await supabase
-      .from('holdings')
-      .select('*')
-      .eq('user_id', req.userId);
-
-    if (error) throw error;
-    await sendPortfolioResponse(holdings, res);
+    const user = await User.findById(req.userId);
+    if (!user) throw new Error("No user found");
+    const formattedHoldings = user.holdings.map(h => ({
+      ...h.toObject(),
+      stock_name: h.ticker,
+      buy_price: h.buyPrice,
+      id: h._id
+    }));
+    await sendPortfolioResponse(formattedHoldings, res);
   } catch (err) {
-    if (err.message && err.message.includes('fetch failed')) {
-      const targetHoldings = localHoldings.filter(h => h.user_id === req.userId);
-      return await sendPortfolioResponse(targetHoldings, res);
-    }
     console.error("Portfolio fetch error:", err.message);
     res.status(200).json([]);
   }
@@ -129,36 +144,31 @@ async function sendPortfolioResponse(holdingsList, res) {
 app.post('/api/portfolio/sell', attachUserId, async (req, res) => {
   const { id, ticker, sellPrice, quantity, buyPrice } = req.body;
   try {
-    await supabase.from('holdings').delete().eq('id', id);
-    await supabase.from('history').insert([{
-       user_id: req.userId, stock_name: ticker, quantity, buy_price: buyPrice, sell_price: sellPrice
-    }]);
+    const user = await User.findById(req.userId);
+    user.holdings = user.holdings.filter(h => h._id.toString() !== id.toString());
+    await user.save();
+    
+    sendGeneralNotification(
+      user.email,
+      user.first_name || 'Trader',
+      `Position Closed: ${ticker.toUpperCase()}`,
+      `<div style="font-family:sans-serif; background:#f4f4f4; padding:20px;">
+         <h2 style="color:#0f172a;">Sale Successful 💰</h2>
+         <p>You have successfully closed your position of <strong>${quantity} shares</strong> in <strong>${ticker.toUpperCase()}</strong>.</p>
+         <p><strong>Exit Price:</strong> ₹${sellPrice}</p>
+         <p style="color:#64748b; font-size:12px;">This is an automated transaction receipt from Tradezy.</p>
+       </div>`
+    ).catch(e => console.error("Email Error:", e));
+
     res.status(200).json({ success: true });
   } catch (e) {
-    if (e.message && e.message.includes('fetch failed')) {
-      localHoldings = localHoldings.filter(h => h.id !== id);
-      localHistory.push({ id: localIdCounter++, user_id: req.userId, stock_name: ticker, quantity, buy_price: buyPrice, sell_price: sellPrice });
-      return res.status(200).json({ success: true });
-    }
     res.status(500).json({ error: "Failed to record sell transaction" });
   }
 });
 
 app.get('/api/history', attachUserId, async (req, res) => {
-  try {
-    const { data: history, error } = await supabase.from('history').select('*').eq('user_id', req.userId);
-    if (error) throw error;
-    
-    const mapped = history.map(h => ({ ...h, ticker: h.stock_name || h.ticker }));
-    res.status(200).json(mapped);
-  } catch (e) {
-    if (e.message && e.message.includes('fetch failed')) {
-      const mapped = localHistory.filter(h => h.user_id === req.userId).map(h => ({ ...h, ticker: h.stock_name || h.ticker }));
-      return res.status(200).json(mapped);
-    }
-    console.error("History fetch error:", e.message);
-    res.status(200).json([]);
-  }
+   // Assuming a separate History model is not used, skip for now.
+   res.status(200).json([]);
 });
 
 app.get('/api/news', attachUserId, async (req, res) => {
@@ -191,28 +201,20 @@ app.get('/api/news', attachUserId, async (req, res) => {
 
 app.get('/api/user/preferences', attachUserId, async (req, res) => {
    try {
-      const { data, error } = await supabase.from('users').select('alert_time').eq('id', req.userId).single();
-      if (error) throw error;
-      res.status(200).json(data);
+      const user = await User.findById(req.userId).select('alert_time first_name last_name phone address');
+      if (!user) throw new Error("No user found");
+      res.status(200).json(user);
    } catch(e) {
-      if (e.message && e.message.includes('fetch failed')) {
-         return res.status(200).json(localPreferences[req.userId] || { alert_time: '17:00' });
-      }
       res.status(200).json({ alert_time: '17:00' });
    }
 });
 
 app.post('/api/user/preferences', attachUserId, async (req, res) => {
-   const { alert_time } = req.body;
+   const { alert_time, first_name, last_name, phone, address } = req.body;
    try {
-      const { error } = await supabase.from('users').update({ alert_time }).eq('id', req.userId);
-      if (error) throw error;
+      await User.findByIdAndUpdate(req.userId, { alert_time, first_name, last_name, phone, address });
       res.status(200).json({ success: true });
    } catch(e) {
-      if (e.message && e.message.includes('fetch failed')) {
-         localPreferences[req.userId] = { ...localPreferences[req.userId], alert_time };
-         return res.status(200).json({ success: true });
-      }
       res.status(500).json({ error: "Failed to save preferences" });
    }
 });
@@ -247,6 +249,8 @@ app.get('/api/stock/:ticker/financials', attachUserId, async (req, res) => {
 
 const { GoogleGenAI } = require('@google/genai');
 
+
+
 app.post('/api/chatbot', attachUserId, async (req, res) => {
   try {
      const { message, systemInstruction } = req.body;
@@ -263,7 +267,10 @@ app.post('/api/chatbot', attachUserId, async (req, res) => {
          model: 'gemini-2.5-flash',
          contents: message,
          config: {
-             systemInstruction: systemInstruction || "You are a professional, easy-to-understand Stock Market AI Assistant.",
+             systemInstruction: systemInstruction || `You are TradezyAssistant, the official AI Customer Care and Stock Expert for Tradezy.
+1. Customer Care: Answer gently, apologize for issues, help users navigate the app.
+2. App Knowledge: Tradezy has a Dashboard (shows news and portfolio), Portfolio (buy/sell stocks), Market Trends, Learn Stocks (educational), and History. To add a stock, users click the big "Add Stock" button in Portfolio.
+3. Stock Market: Give crisp, data-driven financial advice. Never guarantee returns. Format your text nicely with bullet points and bold text for easy reading. Minimum fluff, maximum value.`,
              temperature: 0.7
          }
      });
@@ -278,22 +285,19 @@ app.post('/api/chatbot', attachUserId, async (req, res) => {
 // Admin Stats Endpoint
 app.get('/api/admin/stats', async (req, res) => {
   try {
-    const { count: usersCount } = await supabase.from('users').select('*', { count: 'exact', head: true });
+    const usersCount = await User.countDocuments();
+    let totalHoldings = 0;
+    let totalValue = 0;
     
-    // Fallback logic for local mock state
-    let totalHoldings = 145;
-    let totalValue = 2450800.50;
-    
-    try {
-      const { data: allHoldings } = await supabase.from('holdings').select('*');
-      if (allHoldings && allHoldings.length > 0) {
-        totalHoldings = allHoldings.length;
-        totalValue = allHoldings.reduce((acc, h) => acc + (h.buy_price * h.quantity), 0) * 1.15; // approximate live value
-      }
-    } catch(e) {}
-    
+    // Rough calculation on small deployments
+    const allUsers = await User.find({}).select('holdings');
+    allUsers.forEach(u => {
+      totalHoldings += u.holdings.length;
+      totalValue += u.holdings.reduce((acc, h) => acc + (h.buyPrice * h.quantity), 0) * 1.15;
+    });
+
     res.status(200).json({
-       totalUsers: usersCount || 42,
+       totalUsers: usersCount,
        totalHoldings,
        totalValue,
        systemHealth: 'Online'

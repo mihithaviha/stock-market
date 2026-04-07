@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../lib/api.js';
 import { useAuth } from '../context/AuthContext';
 import { useWebSocket } from '../context/WebSocketContext';
 import { History as HistoryIcon, TrendingUp, TrendingDown, Clock, Activity, Target, Award, Eye } from 'lucide-react';
@@ -21,9 +21,7 @@ const History = () => {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/history', {
-          headers: { 'x-user-id': user?.id || 'mock-id' }
-        });
+        const res = await api.get(`/history`);
         setHistory(res.data);
       } catch (e) { console.error(e); } finally { setLoading(false); }
     };

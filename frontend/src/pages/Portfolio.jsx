@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../lib/api.js';
 import { useAuth } from '../context/AuthContext';
 import { useWebSocket } from '../context/WebSocketContext';
 import { Plus, TrendingUp, TrendingDown, FileText } from 'lucide-react';
@@ -42,9 +42,7 @@ const Portfolio = () => {
 
   const fetchPortfolio = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/portfolio', {
-        headers: { 'x-user-id': user?.id || 'mock-id' }
-      });
+      const res = await api.get(`/portfolio`);
       setHoldings(res.data);
     } catch (e) {
       console.error(e);
@@ -88,7 +86,7 @@ const Portfolio = () => {
       setHoldings(prev => prev.filter(h => h.id !== holding.id));
       
       try {
-        await axios.post('http://localhost:5000/api/portfolio/sell', {
+        await api.post('http://localhost:5000/api/portfolio/sell', {
            id: holding.id,
            ticker: holding.ticker,
            sellPrice: holding.currentPrice,
@@ -113,9 +111,7 @@ const Portfolio = () => {
     setExpandedRow(ticker);
     if (!financials[ticker]) {
       try {
-        const res = await axios.get(`http://localhost:5000/api/stock/${ticker}/financials`, {
-          headers: { 'x-user-id': user?.id || 'mock-id' }
-        });
+        const res = await api.get(`/stock/${ticker}/financials`);
         setFinancials(prev => ({ ...prev, [ticker]: res.data }));
       } catch (err) {
         console.error("Failed to fetch financials");

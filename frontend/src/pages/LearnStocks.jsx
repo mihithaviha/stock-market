@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
+import api from '../lib/api.js';
 import { useAuth } from '../context/AuthContext';
 import { BookOpen, TrendingUp, ShieldAlert, GraduationCap, DollarSign, PieChart, Lightbulb, Bot, Send, User, X, Lock } from 'lucide-react';
 
@@ -13,8 +13,10 @@ const conceptsOfTheDay = [
   { title: "Compound Interest", desc: "Compound interest is the interest on savings calculated on both the initial principal and the accumulated interest from previous periods.", color: "text-indigo-400", bg: "bg-indigo-500/20" }
 ];
 
+import { handleRazorpayPayment } from '../utils/RazorpayCheckout';
+
 const LearnStocks = () => {
-  const { user } = useAuth();
+  const { user, updateUserPlan } = useAuth();
   const todayConcept = conceptsOfTheDay[new Date().getDay()];
 
   // Tutor Chat State
@@ -22,17 +24,10 @@ const LearnStocks = () => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const handleUpgrade = async () => {
-    try {
-      const { data } = await axios.post('http://localhost:5000/api/stripe/create-checkout-session', {}, {
-         headers: { 'x-user-id': user?.id || 'mock-id-123' } // Or Bearer token when fully migrated
-      });
-      if (data.url) {
-         window.location.href = data.url;
-      }
-    } catch(e) {
-      console.error("Upgrade failed:", e);
-    }
+  const handleUpgrade = () => {
+     handleRazorpayPayment(user, () => {
+        updateUserPlan('PREMIUM');
+     });
   };
   const [messages, setMessages] = useState([
     { role: 'assistant', content: "Hi! I'm your Academy AI Tutor. Ask me any basic question about the stock market, terms, or how trading works!" }
@@ -53,7 +48,7 @@ const LearnStocks = () => {
     setLoading(true);
 
     try {
-      const res = await axios.post('http://localhost:5000/api/chatbot', { 
+      const res = await api.post('http://localhost:5000/api/chatbot', { 
          message: userMsg,
          systemInstruction: "You are a patient, encouraging, specialized Stock Market Teacher for absolute beginners. Explain everything using extremely simple analogies. Never overwhelm the user."
       }, { headers: { 'x-user-id': user?.id || 'mock-id' } });
@@ -122,7 +117,7 @@ const LearnStocks = () => {
                  <h3 className="text-2xl font-bold text-white mb-2">Premium Content Locked</h3>
                  <p className="text-slate-300 mb-6 max-w-sm">Upgrade to Premium to unlock advanced trading strategies, unlimited portfolio tracking, and real-time live market data.</p>
                  <button onClick={handleUpgrade} className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 px-8 rounded-full transition-transform hover:scale-105 shadow-xl shadow-amber-500/20">
-                    Upgrade Now - $9.99/mo
+                    Upgrade Now - ₹500/mo
                  </button>
               </div>
             )}

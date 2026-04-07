@@ -1,12 +1,19 @@
 import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Briefcase, PlusCircle, LogOut, Activity, History as HistoryIcon, TrendingUp, Newspaper, BookOpen, Settings as SettingsIcon } from 'lucide-react';
+import { LayoutDashboard, Briefcase, PlusCircle, LogOut, TrendingUp, Newspaper, BookOpen, Settings as SettingsIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Chatbot from './Chatbot';
+import { handleRazorpayPayment } from '../utils/RazorpayCheckout';
 
 const Layout = () => {
-  const { signOut, user } = useAuth();
+  const { signOut, user, updateUserPlan } = useAuth();
   const navigate = useNavigate();
+
+  const handleUpgrade = () => {
+     handleRazorpayPayment(user, () => {
+        updateUserPlan('PREMIUM');
+     });
+  };
 
   const navLinkClass = ({ isActive }) => 
     `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive ? 'bg-blue-600/10 text-blue-400 font-semibold border-l-4 border-blue-500/80 shadow-sm' : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-200 font-medium'}`;
@@ -16,17 +23,17 @@ const Layout = () => {
       <aside className="w-72 bg-slate-900/80 backdrop-blur-md border-r border-slate-800/80 flex flex-col shadow-2xl z-20 flex-shrink-0">
         <div className="p-6 flex flex-col gap-2 border-b border-slate-800/50">
           <div className="flex items-center gap-3 text-2xl font-bold tracking-tight">
-            <div className="p-2.5 bg-blue-500/10 rounded-xl border border-blue-500/20"><Activity className="text-blue-500" size={24}/></div>
-            <span>Portfolio<span className="text-blue-500">Pro</span></span>
+            <div className="p-2.5 bg-blue-500/10 rounded-xl border border-blue-500/20"><TrendingUp className="text-blue-500" size={24}/></div>
+            <span>Tradezy</span>
           </div>
           {user?.plan_type === 'PREMIUM' ? (
              <div className="text-xs font-bold uppercase tracking-widest text-amber-400 bg-amber-500/10 px-3 py-1 mr-auto rounded-full border border-amber-500/20">
                Premium
              </div>
           ) : (
-             <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500 bg-slate-800 px-3 py-1 mr-auto rounded-full border border-slate-700">
-               Free Tier
-             </div>
+             <button onClick={handleUpgrade} className="cursor-pointer text-[10px] font-bold uppercase tracking-widest text-blue-400 bg-blue-500/10 hover:bg-blue-500 hover:text-white transition-colors px-3 py-1 mr-auto rounded-full border border-blue-500/30">
+               Upgrade to Premium
+             </button>
           )}
         </div>
         
@@ -50,9 +57,6 @@ const Layout = () => {
           </NavLink>
           
           <div className="pt-6 pb-2 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Account Data</div>
-          <NavLink to="/history" className={navLinkClass}>
-            <HistoryIcon size={20} /><span>Trade History</span>
-          </NavLink>
           <NavLink to="/learn-stocks" className={navLinkClass}>
             <BookOpen size={20} /><span>Learn Stocks</span>
           </NavLink>
@@ -80,8 +84,8 @@ const Layout = () => {
         <footer className="mt-auto border-t border-slate-800/80 bg-slate-900/40 p-6">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-500 font-medium">
             <div className="flex items-center gap-2">
-              <Activity size={16} className="text-blue-500/80" />
-              <span>&copy; {new Date().getFullYear()} PortfolioPro India.</span>
+              <TrendingUp size={16} className="text-blue-500/80" />
+              <span>&copy; {new Date().getFullYear()} Tradezy.</span>
             </div>
             <div className="flex gap-6">
               <span className="hover:text-blue-400 cursor-pointer transition-colors">Privacy Policy</span>

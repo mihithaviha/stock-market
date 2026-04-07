@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
+import api from '../lib/api';
 import { X, TrendingUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -20,7 +20,7 @@ const AddStockModal = ({ isOpen, onClose, onAdded }) => {
 
   React.useEffect(() => {
     if (isOpen) {
-      axios.get('http://localhost:5000/api/market/trends', { headers: { 'x-user-id': user?.id || 'mock-id' } })
+      api.get('/market/trends')
         .then(res => {
           if (res.data && res.data.mostActive && res.data.mostActive.length > 0) {
             setTrendingStocks(res.data.mostActive.map(t => t.symbol).slice(0, 6));
@@ -43,7 +43,7 @@ const AddStockModal = ({ isOpen, onClose, onAdded }) => {
 
     setIsSearching(true);
     try {
-      const res = await axios.get(`http://localhost:5000/api/market/search?q=${val}`);
+      const res = await api.get(`/market/search?q=${val}`);
       setSearchResults(res.data);
     } catch (err) {
       console.error(err);
@@ -57,7 +57,7 @@ const AddStockModal = ({ isOpen, onClose, onAdded }) => {
     setSearchQuery(symbol);
     setSearchResults([]);
     try {
-      const res = await axios.get(`http://localhost:5000/api/market/${symbol}`);
+      const res = await api.get(`/market/${symbol}`);
       if (res.data && res.data.currentPrice) handlePriceChange(res.data.currentPrice.toString());
     } catch (err) {
       console.warn("Price fetch skipped:", err.message);
@@ -84,6 +84,12 @@ const AddStockModal = ({ isOpen, onClose, onAdded }) => {
 
   const handleClose = () => {
     toast('Cancelled adding stock ❌', { icon: 'ℹ️', style: { background: '#334155', color: '#fff' } });
+    setTicker('');
+    setQuantity('');
+    setBuyPrice('');
+    setTotalInvestment('');
+    setSearchQuery('');
+    setErrors({});
     onClose();
   };
 
@@ -114,19 +120,17 @@ const AddStockModal = ({ isOpen, onClose, onAdded }) => {
 
     try {
       try {
-        await axios.get(`http://localhost:5000/api/market/${ticker}`);
+        await api.get(`/market/${ticker}`);
       } catch (err) {
         setErrors({ ticker: 'Invalid ticker or failed to fetch price ❌' });
         setLoading(false);
         return;
       }
 
-      const res = await axios.post('http://localhost:5000/api/portfolio/add', {
+      const res = await api.post('/portfolio/add', {
         ticker,
         quantity: Number(quantity),
         buyPrice: Number(buyPrice)
-      }, {
-        headers: { 'x-user-id': user?.id || 'mock-id' }
       });
 
       toast.success('Stock added successfully ✅');

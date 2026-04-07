@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../lib/api.js';
 import { useAuth } from '../context/AuthContext';
 import { Shield, Users, Activity, LogOut, DollarSign } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -13,9 +13,7 @@ const AdminDashboard = () => {
   useEffect(() => {
     const fetchAdminStats = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/admin/stats', {
-          headers: { 'x-user-id': user?.id || 'mock-id' }
-        });
+        const res = await api.get(`/admin/stats`);
         setStats(res.data);
       } catch (e) {
         console.error("Error fetching admin stats", e);

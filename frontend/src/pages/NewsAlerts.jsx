@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../lib/api.js';
 import { useAuth } from '../context/AuthContext';
 import { useWebSocket } from '../context/WebSocketContext';
 import { Newspaper, BellRing, TrendingUp, TrendingDown } from 'lucide-react';
@@ -13,7 +13,7 @@ const NewsAlerts = () => {
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/news', { headers: { 'x-user-id': user?.id || 'mock' } });
+        const res = await api.get(`/news`);
         setNews(res.data);
       } catch (e) {
         console.error(e);

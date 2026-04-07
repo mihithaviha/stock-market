@@ -18,11 +18,8 @@ const attachUserId = (req, res, next) => {
     }
   }
 
-  // Fallback to the old logic so the app doesn't break entirely if frontend isn't 100% migrated yet
-  const userId = req.headers['x-user-id'] || 'mock-user-id-123';
-  req.userId = userId;
-  req.userPlan = 'FREE'; // Mock old users as free users
-  next();
+  // Fallback to old behavior only if explicitly testing without tokens, but we should reject empty tokens
+  return res.status(401).json({ error: "Unauthorized: Missing Token header" });
 };
 
 module.exports = { attachUserId, JWT_SECRET };

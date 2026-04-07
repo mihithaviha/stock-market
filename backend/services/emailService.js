@@ -148,7 +148,7 @@ async function sendDailyReport(userEmail, portfolioSummary) {
 
   const html = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 10px;">
-      <h2 style="color: #0f172a;">Portfolio<span style="color: #3b82f6;">Pro</span> Daily Digest</h2>
+      <h2 style="color: #0f172a;">Tradezy Daily Digest</h2>
       <p style="font-size: 16px;">Hello,</p>
       <p style="font-size: 18px; font-weight: bold;">
         Your portfolio is ${isUp ? '<span style="color: #10b981;">up 📈</span>' : '<span style="color: #ef4444;">down 📉</span>'} 
@@ -162,7 +162,7 @@ async function sendDailyReport(userEmail, portfolioSummary) {
       </div>
       
       <div style="font-size: 14px; color: #64748b; margin-top: 30px; text-align: center;">
-        Sent automatically by PortfolioPro • Total Value: ₹${totalVal.toFixed(2)}
+        Sent automatically by Tradezy • Total Value: ₹${totalVal.toFixed(2)}
       </div>
     </div>
   `;

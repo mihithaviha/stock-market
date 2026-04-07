@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../lib/api.js';
 import { useAuth } from '../context/AuthContext';
 import { useWebSocket } from '../context/WebSocketContext';
 import { TrendingUp, TrendingDown, Activity, DollarSign, Search, AlertTriangle, CheckCircle } from 'lucide-react';
@@ -11,19 +11,18 @@ const MarketTrends = () => {
   const [loading, setLoading] = useState(true);
   
   // Financial Analyzer State
-  const [searchTicker, setSearchTicker] = useState('AAPL');
+  const [searchTicker, setSearchTicker] = useState('');
   const [financials, setFinancials] = useState(null);
   const [finLoading, setFinLoading] = useState(false);
 
   useEffect(() => {
     const fetchTrends = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/market/trends', { headers: { 'x-user-id': user?.id || 'mock' } });
+        const res = await api.get(`/market/trends`);
         setTrends(res.data);
       } catch (e) { console.error(e); } finally { setLoading(false); }
     };
     fetchTrends();
-    fetchFinancials(searchTicker);
   }, []); // eslint-disable-line
 
   useEffect(() => {
@@ -33,10 +32,13 @@ const MarketTrends = () => {
   }, [trends, subscribeToTicker]);
 
   const fetchFinancials = async (ticker) => {
-    if (!ticker) return;
+    if (!ticker) {
+       setFinancials(null);
+       return;
+    }
     setFinLoading(true);
     try {
-      const res = await axios.get(`http://localhost:5000/api/stock/${ticker}/financials`, { headers: { 'x-user-id': user?.id || 'mock' } });
+      const res = await api.get(`/stock/${ticker}/financials`);
       setFinancials(res.data);
     } catch (e) {
       setFinancials(null);
@@ -151,7 +153,9 @@ const MarketTrends = () => {
               </div>
            </div>
          ) : (
-           <div className="text-slate-500 py-8 text-center bg-slate-950/30 rounded-2xl border border-slate-800/50 border-dashed">No financial data available for '{searchTicker}'.</div>
+           <div className="text-slate-500 py-8 text-center bg-slate-950/30 rounded-2xl border border-slate-800/50 border-dashed">
+             {searchTicker ? `No financial data available for '${searchTicker}'.` : "Search for a company ticker to view quarterly results."}
+           </div>
          )}
       </div>
     </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../lib/api.js';
 import { useAuth } from '../context/AuthContext';
 import { useWebSocket } from '../context/WebSocketContext';
 import { Activity, TrendingUp, AlertTriangle, Newspaper, TrendingDown, Wallet, PieChart as PieChartIcon, ArrowUpRight, ArrowDownRight, Award, AlertCircle } from 'lucide-react';
@@ -18,8 +18,8 @@ const Dashboard = () => {
       const headers = { 'x-user-id': user?.id || 'mock-id' };
       
       const [portfolioRes, newsRes] = await Promise.all([
-        axios.get(`${API_URL}/portfolio`, { headers }),
-        axios.get(`${API_URL}/news`, { headers })
+        api.get(`${API_URL}/portfolio`, { headers }),
+        api.get(`${API_URL}/news`, { headers })
       ]);
       setHoldings(portfolioRes.data);
       setNews(newsRes.data);
@@ -90,11 +90,13 @@ const Dashboard = () => {
     return hist;
   };
 
+  const firstName = user?.email ? user.email.split('@')[0].charAt(0).toUpperCase() + user.email.split('@')[0].slice(1) : 'Investor';
+
   return (
     <div className="p-8 max-w-7xl mx-auto font-sans text-slate-50">
       <header className="mb-10">
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Portfolio Overview</h1>
-        <p className="text-slate-400">Welcome back! Here's how your investments are performing.</p>
+        <h1 className="text-3xl font-bold tracking-tight mb-2">Welcome, {firstName}</h1>
+        <p className="text-slate-400">Here's how your investments are performing today.</p>
       </header>
 
       {loading && holdings.length === 0 ? (
