@@ -40,7 +40,7 @@ const Settings = () => {
   const handleSave = async () => {
      setIsSaving(true);
      try {
-       await api.post('http://localhost:5000/api/user/preferences', { 
+       await api.post('https://stock-market-bm5j.onrender.com/api/user/preferences', { 
          alert_time: alertTime,
          first_name: firstName,
          last_name: lastName,

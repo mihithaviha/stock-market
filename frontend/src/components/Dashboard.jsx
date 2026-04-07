@@ -14,7 +14,7 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const API_URL = 'http://localhost:5000/api';
+      const API_URL = 'https://stock-market-bm5j.onrender.com/api';
       const headers = { 'x-user-id': user?.id || 'mock-id' };
       
       const [portfolioRes, newsRes] = await Promise.all([

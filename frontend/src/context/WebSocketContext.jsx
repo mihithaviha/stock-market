@@ -13,7 +13,7 @@ export const WebSocketProvider = ({ children }) => {
 
   useEffect(() => {
     // We connect to the backend
-    const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const backendUrl = import.meta.env.VITE_API_URL || 'https://stock-market-bm5j.onrender.com';
     const newSocket = io(backendUrl);
 
     setSocket(newSocket);

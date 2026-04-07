@@ -48,7 +48,7 @@ const LearnStocks = () => {
     setLoading(true);
 
     try {
-      const res = await api.post('http://localhost:5000/api/chatbot', { 
+      const res = await api.post('https://stock-market-bm5j.onrender.com/api/chatbot', { 
          message: userMsg,
          systemInstruction: "You are a patient, encouraging, specialized Stock Market Teacher for absolute beginners. Explain everything using extremely simple analogies. Never overwhelm the user."
       }, { headers: { 'x-user-id': user?.id || 'mock-id' } });

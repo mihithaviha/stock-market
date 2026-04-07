@@ -86,7 +86,7 @@ const Portfolio = () => {
       setHoldings(prev => prev.filter(h => h.id !== holding.id));
       
       try {
-        await api.post('http://localhost:5000/api/portfolio/sell', {
+        await api.post('https://stock-market-bm5j.onrender.com/api/portfolio/sell', {
            id: holding.id,
            ticker: holding.ticker,
            sellPrice: holding.currentPrice,

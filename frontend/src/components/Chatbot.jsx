@@ -33,7 +33,7 @@ const Chatbot = () => {
     setLoading(true);
 
     try {
-      const res = await api.post('http://localhost:5000/api/chatbot', { 
+      const res = await api.post('https://stock-market-bm5j.onrender.com/api/chatbot', { 
          message: userMsg,
          systemInstruction: "You are the Customer Service and Data Assistant for an app called 'PortfolioPro'. You know about the app features: adding stocks, monitoring portfolio, real-time fetching, etc. Be professional, concise, and helpful."
       }, {
