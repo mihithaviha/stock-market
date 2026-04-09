@@ -1,5 +1,5 @@
 const cron = require('node-cron');
-const supabase = require('../supabase');
+const User = require('../models/User');
 const { getStockQuote, getStockNews, getMarketTrends } = require('../services/yahooFinance');
 const { sendDailyReport, sendNewsAlert, sendSuggestionsEmail } = require('../services/emailService');
 
@@ -15,13 +15,14 @@ function initCronJobs() {
     try {
       let users = [];
       try {
-         const res = await supabase.from('users').select('*');
-         if (!res.error && res.data) users = res.data;
-      } catch(e) {}
+         users = await User.find({});
+      } catch(e) {
+         console.error("Mongoose Model fetch failed in Cron:", e.message);
+      }
       
       // Fallback for local testing if no database is configured
       if (users.length === 0) {
-         users = [{ id: 'mock-id', email: 'viharinimihitha@gmail.com', alert_time: currentTimeStr }];
+         users = [{ id: 'mock-id', email: 'viharinimihitha@gmail.com', alert_time: currentTimeStr, holdings: [] }];
       }
 
       const targetUsers = users.filter(u => {
@@ -35,9 +36,9 @@ function initCronJobs() {
       for (const u of targetUsers) {
         try {
           const userEmail = u.email || 'viharinimihitha@gmail.com';
-          const { data: holdings } = await supabase.from('holdings').select('*').eq('user_id', u.id);
+          const holdings = u.holdings || [];
 
-          if (!holdings || holdings.length === 0) {
+          if (holdings.length === 0) {
             const trends = await getMarketTrends();
             const suggestions = trends ? (trends.mostActive || trends.topGainers || []).slice(0, 3) : [];
             await sendSuggestionsEmail(userEmail, suggestions);
@@ -54,9 +55,9 @@ function initCronJobs() {
             if (!tickerSymbol) continue;
 
             const liveData = await getStockQuote(tickerSymbol);
-            const currentPrice = liveData?.price || h.buy_price || 0;
+            const currentPrice = liveData?.price || h.buyPrice || 0;
             const qty = h.quantity || 0;
-            const buyPrice = h.buy_price || 0;
+            const buyPrice = h.buyPrice || 0; // Mongoose schema uses buyPrice camelCase!
             const pnl = (currentPrice - buyPrice) * qty;
 
             totalVal += currentPrice * qty;
@@ -79,8 +80,11 @@ function initCronJobs() {
   cron.schedule('0 */2 * * *', async () => {
     console.log("Scanning for breaking news alerts...");
     try {
-      const { data: users, error } = await supabase.from('users').select('*');
-      if (error || !users || users.length === 0) return;
+      let users = [];
+      try {
+         users = await User.find({});
+      } catch(e) {}
+      if (!users || users.length === 0) return;
 
       const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
       const now = Date.now();
@@ -88,9 +92,9 @@ function initCronJobs() {
       for (const u of users) {
         try {
           const userEmail = u.email || 'viharinimihitha@gmail.com';
-          const { data: holdings } = await supabase.from('holdings').select('*').eq('user_id', u.id);
+          const holdings = u.holdings || [];
 
-          if (!holdings || holdings.length === 0) continue;
+          if (holdings.length === 0) continue;
 
           const checkedSymbols = new Set();
 

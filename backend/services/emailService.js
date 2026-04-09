@@ -65,7 +65,10 @@ const shouldSendEmail = (userEmail, type, frequency = 'once') => {
   const now = Date.now();
   const lastSent = emailTracker[userEmail][type];
 
-  if (frequency === 'once') {
+  if (frequency === 'always') {
+    emailTracker[userEmail][type] = now;
+    return true;
+  } else if (frequency === 'once') {
     if (lastSent) return false; // Already sent ever
     emailTracker[userEmail][type] = now;
     return true;
@@ -96,7 +99,7 @@ async function sendWelcomeEmail(userEmail, userName, tempPassword = null) {
 }
 
 async function sendLoginAlert(userEmail, userName, metadata) {
-  if (!shouldSendEmail(userEmail, 'loginAlert', 'daily')) return;
+  if (!shouldSendEmail(userEmail, 'loginAlert', 'always')) return;
 
   const { time, device, location } = metadata;
   const html = getLoginAlertHtml(userName, time, device, location);
@@ -110,7 +113,7 @@ async function sendLoginAlert(userEmail, userName, metadata) {
 }
 
 async function sendGeneralNotification(userEmail, userName, title, messageHtml) {
-  if (!shouldSendEmail(userEmail, 'notification_' + title, 'once')) return;
+  if (!shouldSendEmail(userEmail, 'notification_' + title, 'always')) return;
 
   const html = getGeneralNotificationHtml(userName, title, messageHtml);
 

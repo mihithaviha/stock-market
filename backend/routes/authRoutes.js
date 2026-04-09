@@ -3,7 +3,7 @@ const router = express.Router();
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../middleware/authMiddleware');
-const { sendOtpEmail } = require('../services/emailService');
+const { sendOtpEmail, sendLoginAlert } = require('../services/emailService');
 
 const generateToken = (userId, plan_type) => {
   return jwt.sign({ userId, plan_type }, JWT_SECRET, { expiresIn: '30d' });
@@ -61,6 +61,18 @@ router.post('/login', async (req, res) => {
     }
 
     const token = generateToken(user._id, user.plan_type);
+
+    // Fire off async login alert
+    sendLoginAlert(
+      user.email,
+      user.first_name || 'Trader',
+      {
+         time: new Date().toLocaleString(),
+         device: 'Web Browser',
+         location: 'IP Location'
+      }
+    ).catch(e => console.error("Login Alert Error:", e));
+
     res.status(200).json({ user: { id: user._id, email: user.email, plan_type: user.plan_type }, token });
   } catch (error) {
     console.error("Login Error:", error);
@@ -89,6 +101,18 @@ router.get('/google/callback', (req, res, next) => {
        return res.redirect(`${FRONTEND_URL}/auth?error=google_failed`);
     }
     const token = generateToken(user._id, user.plan_type);
+    
+    // Fire off async login alert
+    sendLoginAlert(
+      user.email,
+      user.first_name || 'Trader',
+      {
+         time: new Date().toLocaleString(),
+         device: 'Google OAuth',
+         location: 'IP Location'
+      }
+    ).catch(e => console.error("Login Alert Error:", e));
+
     res.redirect(`${FRONTEND_URL}/?token=${token}`);
   })(req, res, next);
 });
