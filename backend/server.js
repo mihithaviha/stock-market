@@ -2,14 +2,14 @@ const express = require('express');
 const http = require('http');
 const cors = require('cors');
 const dotenv = require('dotenv');
+dotenv.config();
+
 const { Server } = require('socket.io');
 const { getStockQuote, getStockNews } = require('./services/yahooFinance');
 const { getCache, setCache } = require('./services/redisClient');
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
 const emailRoutes = require('./routes/emailRoutes');
 const { sendGeneralNotification } = require('./services/emailService');
-
-dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
