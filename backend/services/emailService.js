@@ -7,11 +7,14 @@ const {
 } = require('./emailTemplates');
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.EMAIL_USER || 'mock@gmail.com',
-    pass: process.env.EMAIL_PASS || 'mockpassword',
+    pass: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.replace(/\s+/g, '') : 'mockpassword',
   },
+  logger: process.env.NODE_ENV === 'development',
 });
 
 // A lightweight asynchronous queue to process emails in the background
