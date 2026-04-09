@@ -69,6 +69,19 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Backend is running' });
 });
 
+app.get('/api/db-test', async (req, res) => {
+  try {
+    const state = mongoose.connection.readyState;
+    const states = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
+    res.status(200).json({ 
+      mongoState: states[state] || state,
+      uri: mongoose.connection.host || "No host resolved"
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 const { attachUserId } = require('./middleware/authMiddleware');
 const User = require('./models/User');
 
