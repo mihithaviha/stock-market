@@ -74,11 +74,23 @@ router.get('/google', passport.authenticate('google', { scope: ['profile', 'emai
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'https://tradezy.vercel.app';
 
-router.get('/google/callback', passport.authenticate('google', { session: false, failureRedirect: `${FRONTEND_URL}/auth?error=google_failed` }), (req, res) => {
-  // Successful authentication
-  const token = generateToken(req.user._id, req.user.plan_type);
-  // Redirect to frontend with token in the URL params
-  res.redirect(`${FRONTEND_URL}/?token=${token}`);
+router.get('/google/callback', (req, res, next) => {
+  passport.authenticate('google', { session: false }, (err, user, info) => {
+    if (err) {
+       console.error("Deep Auth Crash:", err);
+       return res.status(500).json({ 
+         CRASH_REPORT: "Express caught an error during Google authentication.",
+         errorMessage: err.message, 
+         errorName: err.name,
+         hint: "If this mentions Mongoose or timeout, your MongoDB Atlas isn't allowing Render's IP."
+       });
+    }
+    if (!user) {
+       return res.redirect(`${FRONTEND_URL}/auth?error=google_failed`);
+    }
+    const token = generateToken(user._id, user.plan_type);
+    res.redirect(`${FRONTEND_URL}/?token=${token}`);
+  })(req, res, next);
 });
 
 router.get('/me', async (req, res) => {
