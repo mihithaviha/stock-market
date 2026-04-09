@@ -19,7 +19,8 @@ const Auth = () => {
 
     setLoading(true);
     try {
-      const res = await fetch('https://stock-market-bm5j.onrender.com/api/auth/check', {
+      const API_URL = import.meta.env.VITE_API_URL || 'https://stock-market-bm5j.onrender.com/api/auth';
+      const res = await fetch(`${API_URL}/check`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
@@ -47,7 +48,8 @@ const Auth = () => {
         if (error) throw error;
         
         try {
-          await fetch('https://stock-market-bm5j.onrender.com/api/emails/send-login-alert', {
+          const API_BASE = import.meta.env.VITE_API_BASE || 'https://stock-market-bm5j.onrender.com/api';
+          await fetch(`${API_BASE}/emails/send-login-alert`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -63,7 +65,8 @@ const Auth = () => {
         alert('Check your email for the confirmation link or log in if auto-confirmed!');
         
         try {
-          await fetch('https://stock-market-bm5j.onrender.com/api/emails/send-welcome-email', {
+          const API_BASE = import.meta.env.VITE_API_BASE || 'https://stock-market-bm5j.onrender.com/api';
+          await fetch(`${API_BASE}/emails/send-welcome-email`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 

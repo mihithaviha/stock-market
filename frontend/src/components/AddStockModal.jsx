@@ -138,7 +138,19 @@ const AddStockModal = ({ isOpen, onClose, onAdded }) => {
       onClose();
       setTicker(''); setQuantity(''); setBuyPrice(''); setTotalInvestment(''); setSearchQuery('');
     } catch (err) {
-      setErrors({ form: 'Failed to add stock ❌' });
+      console.error("API POST Error in AddStockModal:", err);
+      let errorMsg = 'Failed to add stock ❌';
+      
+      if (err.response) {
+        if (err.response.status === 401) errorMsg = 'Unauthorized: Please log in again ❌';
+        else if (err.response.status === 400) errorMsg = `Bad Request: ${err.response.data?.error || 'Check input data'} ❌`;
+        else if (err.response.status === 500) errorMsg = 'Internal Server Error ❌';
+        else if (err.response.status === 502) errorMsg = '502 Bad Gateway: Server is offline ❌';
+      } else if (err.request) {
+        errorMsg = 'Network Timeout/Connection Error ❌';
+      }
+
+      setErrors({ form: errorMsg });
     } finally {
       setLoading(false);
     }

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://stock-market-bm5j.onrender.com/api'
+  baseURL: import.meta.env.VITE_API_BASE || 'https://stock-market-bm5j.onrender.com/api'
 });
 
 api.interceptors.request.use((config) => {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../lib/api.js';
 import { useAuth } from '../context/AuthContext';
@@ -63,10 +63,12 @@ const Portfolio = () => {
     }
   }, [holdings, subscribeToTicker]);
 
-  const displayHoldings = holdings.map(h => {
-     const lp = livePrices[h.ticker];
-     return lp ? { ...h, currentPrice: lp, profitLoss: (lp - h.buy_price) * h.quantity } : h;
-  });
+  const displayHoldings = useMemo(() => {
+    return holdings.map(h => {
+       const lp = livePrices[h.ticker];
+       return lp ? { ...h, currentPrice: lp, profitLoss: (lp - h.buy_price) * h.quantity } : h;
+    });
+  }, [holdings, livePrices]);
 
   const handleCreateOpen = () => {
      if ((!user?.plan_type || user.plan_type === 'FREE') && displayHoldings.length >= 5) {
@@ -86,13 +88,13 @@ const Portfolio = () => {
       setHoldings(prev => prev.filter(h => h.id !== holding.id));
       
       try {
-        await api.post('https://stock-market-bm5j.onrender.com/api/portfolio/sell', {
+        await api.post('/portfolio/sell', {
            id: holding.id,
            ticker: holding.ticker,
            sellPrice: holding.currentPrice,
            quantity: holding.quantity,
            buyPrice: holding.buy_price
-        }, { headers: { 'x-user-id': user?.id || 'mock-id' } });
+        });
         toast.success(`Position in ${holding.ticker} exited successfully ✅`);
       } catch(e) { 
         console.error("Error selling stock", e); 
@@ -119,10 +121,18 @@ const Portfolio = () => {
     }
   };
 
-  const totalInvested = displayHoldings.reduce((acc, h) => acc + (h.buy_price * h.quantity), 0);
-  const currentVal = displayHoldings.reduce((acc, h) => acc + (h.currentPrice * h.quantity), 0);
-  const totalPnL = currentVal - totalInvested;
-  const pnlPercent = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : 0;
+  const { totalInvested, currentVal, totalPnL, pnlPercent } = useMemo(() => {
+    const tInvested = displayHoldings.reduce((acc, h) => acc + (h.buy_price * h.quantity), 0);
+    const cVal = displayHoldings.reduce((acc, h) => acc + (h.currentPrice * h.quantity), 0);
+    const tPnL = cVal - tInvested;
+    const pPercent = tInvested > 0 ? (tPnL / tInvested) * 100 : 0;
+    return { 
+      totalInvested: tInvested, 
+      currentVal: cVal, 
+      totalPnL: tPnL, 
+      pnlPercent: pPercent 
+    };
+  }, [displayHoldings]);
 
   return (
     <div className="p-8 max-w-7xl mx-auto font-sans">
