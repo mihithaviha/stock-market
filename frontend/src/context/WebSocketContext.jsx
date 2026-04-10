@@ -12,8 +12,9 @@ export const WebSocketProvider = ({ children }) => {
   const { user } = useAuth(); // Assume user.plan_type exists from new JWT logic
 
   useEffect(() => {
-    // We connect to the backend
-    const backendUrl = import.meta.env.VITE_API_URL || 'https://stock-market-bm5j.onrender.com';
+    // We connect to the backend, enforcing production URL on Vercel
+    const isProd = import.meta.env.PROD;
+    const backendUrl = isProd ? 'https://stock-market-bm5j.onrender.com' : (import.meta.env.VITE_API_URL || 'https://stock-market-bm5j.onrender.com');
     const newSocket = io(backendUrl);
 
     setSocket(newSocket);
