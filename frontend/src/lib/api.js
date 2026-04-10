@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const isProd = import.meta.env.PROD;
 const api = axios.create({
-  baseURL: isProd ? 'https://stock-market-bm5j.onrender.com/api' : (import.meta.env.VITE_API_BASE || 'https://stock-market-bm5j.onrender.com/api')
+  baseURL: isProd ? 'https://stock-market-bm5j.onrender.com/api' : (import.meta.env.VITE_API_BASE || 'http://localhost:5000/api')
 });
 
 api.interceptors.request.use((config) => {
