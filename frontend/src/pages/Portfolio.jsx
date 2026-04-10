@@ -135,11 +135,11 @@ const Portfolio = () => {
   }, [displayHoldings]);
 
   return (
-    <div className="p-8 max-w-7xl mx-auto font-sans">
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto font-sans text-slate-900 dark:text-slate-50 transition-colors duration-200">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">My Holdings</h1>
-          <p className="text-slate-400 mt-1">Manage and track your individual positions live.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">My Holdings</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">Manage and track your individual positions live.</p>
         </div>
         <button onClick={handleCreateOpen} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 px-5 py-2.5 rounded-xl font-medium transition-colors text-white shadow-lg shadow-blue-500/20">
           <Plus size={18} /> Add Stock
@@ -147,13 +147,13 @@ const Portfolio = () => {
       </div>
 
       {loading && holdings.length === 0 ? (
-        <div className="animate-pulse h-64 bg-slate-900 rounded-2xl border border-slate-800"></div>
+        <div className="animate-pulse h-64 bg-slate-200 dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 transition-colors"></div>
       ) : (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-2xl transition-colors">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[700px]">
               <thead>
-                <tr className="bg-slate-950/50 border-b border-slate-800 text-slate-400 text-sm">
+                <tr className="bg-slate-50 dark:bg-slate-950/50 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-sm transition-colors">
                   <th className="p-5 font-semibold">Stock Name</th>
                   <th className="p-5 font-semibold text-right">Qty</th>
                   <th className="p-5 font-semibold text-right">Avg. Price</th>
@@ -163,7 +163,7 @@ const Portfolio = () => {
                   <th className="p-5 font-semibold text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/50">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
                 {displayHoldings.map((h) => {
                   const pnl = h.profitLoss;
                   const pnlPct = ((h.currentPrice - h.buy_price) / h.buy_price) * 100;
@@ -171,61 +171,61 @@ const Portfolio = () => {
                   
                   return (
                     <React.Fragment key={h.id}>
-                      <tr className="hover:bg-slate-800/30 transition-colors">
+                      <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
                         <td className="p-5">
-                          <div className="font-bold text-slate-100 text-lg">{h.name}</div>
+                          <div className="font-bold text-slate-900 dark:text-slate-100 text-lg transition-colors">{h.name}</div>
                           <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-sm text-slate-400 truncate max-w-[150px]">{h.ticker}</span>
-                            <button onClick={() => toggleExpanded(h.ticker)} className="text-[10px] font-bold uppercase tracking-wider bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white px-2 py-0.5 rounded transition-colors flex items-center gap-1">
+                            <span className="text-sm text-slate-500 dark:text-slate-400 truncate max-w-[150px] transition-colors">{h.ticker}</span>
+                            <button onClick={() => toggleExpanded(h.ticker)} className="text-[10px] font-bold uppercase tracking-wider bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-600 dark:hover:bg-blue-500 hover:text-white dark:hover:text-white px-2 py-0.5 rounded transition-colors flex items-center gap-1">
                                <FileText size={10} /> Financials
                             </button>
                           </div>
                         </td>
-                      <td className="p-5 text-right font-medium text-slate-200">{h.quantity}</td>
-                      <td className="p-5 text-right text-slate-300">₹{h.buy_price.toFixed(2)}</td>
-                      <td className="p-5 text-right font-medium text-slate-100">₹{h.currentPrice.toFixed(2)}</td>
-                      <td className={`p-5 text-right font-semibold ${h.dayChange >= 0 ? 'text-emerald-400 bg-emerald-400/10' : 'text-rose-400 bg-rose-400/10'} rounded-lg`}>
+                      <td className="p-5 text-right font-medium text-slate-800 dark:text-slate-200 transition-colors">{h.quantity}</td>
+                      <td className="p-5 text-right text-slate-700 dark:text-slate-300 transition-colors">₹{h.buy_price.toFixed(2)}</td>
+                      <td className="p-5 text-right font-medium text-slate-900 dark:text-slate-100 transition-colors">₹{h.currentPrice.toFixed(2)}</td>
+                      <td className={`p-5 text-right font-semibold ${h.dayChange >= 0 ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-400/10' : 'text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-400/10'} rounded-lg transition-colors`}>
                         {h.dayChange > 0 ? '+' : ''}{h.dayChange.toFixed(2)}%
                       </td>
                       <td className="p-5 text-right">
-                        <div className={`font-bold text-lg flex items-center justify-end gap-1 ${isProfitable ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        <div className={`font-bold text-lg flex items-center justify-end gap-1 ${isProfitable ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'} transition-colors`}>
                           {isProfitable ? <TrendingUp size={18}/> : <TrendingDown size={18}/>}
                           ₹{Math.abs(pnl).toFixed(2)}
                         </div>
-                        <div className={`text-sm font-medium mt-0.5 ${isProfitable ? 'text-emerald-500/80' : 'text-rose-500/80'}`}>
+                        <div className={`text-sm font-medium mt-0.5 ${isProfitable ? 'text-emerald-600/80 dark:text-emerald-500/80' : 'text-rose-600/80 dark:text-rose-500/80'} transition-colors`}>
                           {pnlPct > 0 ? '+' : ''}{pnlPct.toFixed(2)}%
                         </div>
                       </td>
                       <td className="p-5 text-right flex gap-2 justify-end">
-                        <button onClick={() => handleSell(h)} className="text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-500 px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-sm">
+                        <button onClick={() => handleSell(h)} className="text-rose-600 dark:text-rose-400 hover:text-white dark:hover:text-white bg-rose-100 dark:bg-rose-500/10 hover:bg-rose-500 dark:hover:bg-rose-500 px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-sm">
                           Exit
                         </button>
                       </td>
                     </tr>
                     {expandedRow === h.ticker && (
-                      <tr className="bg-slate-900/50">
-                        <td colSpan="7" className="p-5 border-t border-slate-800/50">
+                      <tr className="bg-slate-50/50 dark:bg-slate-900/50 transition-colors">
+                        <td colSpan="7" className="p-5 border-t border-slate-100 dark:border-slate-800/50">
                           {financials[h.ticker] ? (
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-                              <div className="bg-slate-950/80 p-4 rounded-xl border border-slate-800">
-                                <span className="text-slate-400 block mb-1 font-medium">Revenue Gr.</span>
+                              <div className="bg-white dark:bg-slate-950/80 p-4 rounded-xl border border-slate-200 dark:border-slate-800 transition-colors">
+                                <span className="text-slate-500 dark:text-slate-400 block mb-1 font-medium transition-colors">Revenue Gr.</span>
                                 {financials[h.ticker].revenueGrowth !== null ? `${(financials[h.ticker].revenueGrowth * 100).toFixed(2)}%` : 'Data Unavailable'}
                               </div>
-                              <div className="bg-slate-950/80 p-4 rounded-xl border border-slate-800">
-                                <span className="text-slate-400 block mb-1 font-medium">Profit Margin</span>
+                              <div className="bg-white dark:bg-slate-950/80 p-4 rounded-xl border border-slate-200 dark:border-slate-800 transition-colors">
+                                <span className="text-slate-500 dark:text-slate-400 block mb-1 font-medium transition-colors">Profit Margin</span>
                                 {financials[h.ticker].profitMargins !== null ? `${(financials[h.ticker].profitMargins * 100).toFixed(2)}%` : 'Data Unavailable'}
                               </div>
-                              <div className="bg-slate-950/80 p-4 rounded-xl border border-slate-800">
-                                <span className="text-slate-400 block mb-1 font-medium">Op Margin</span>
+                              <div className="bg-white dark:bg-slate-950/80 p-4 rounded-xl border border-slate-200 dark:border-slate-800 transition-colors">
+                                <span className="text-slate-500 dark:text-slate-400 block mb-1 font-medium transition-colors">Op Margin</span>
                                 {financials[h.ticker].operatingMargins !== null ? `${(financials[h.ticker].operatingMargins * 100).toFixed(2)}%` : 'Data Unavailable'}
                               </div>
-                              <div className="bg-slate-950/80 p-4 rounded-xl border border-slate-800">
-                                <span className="text-slate-400 block mb-1 font-medium">Analyst Rec.</span>
-                                <span className="uppercase text-blue-400 font-bold">{financials[h.ticker].recommendationKey || 'N/A'}</span>
+                              <div className="bg-white dark:bg-slate-950/80 p-4 rounded-xl border border-slate-200 dark:border-slate-800 transition-colors">
+                                <span className="text-slate-500 dark:text-slate-400 block mb-1 font-medium transition-colors">Analyst Rec.</span>
+                                <span className="uppercase text-blue-600 dark:text-blue-400 font-bold transition-colors">{financials[h.ticker].recommendationKey || 'N/A'}</span>
                               </div>
                             </div>
                           ) : (
-                            <div className="text-slate-400 text-sm animate-pulse">Fetching Quarterly Results...</div>
+                            <div className="text-slate-500 dark:text-slate-400 text-sm animate-pulse transition-colors">Fetching Quarterly Results...</div>
                           )}
                         </td>
                       </tr>
@@ -234,18 +234,18 @@ const Portfolio = () => {
                   );
                 })}
                 {displayHoldings.length === 0 && (
-                  <tr><td colSpan="7" className="p-12 text-center text-slate-400 font-medium">No holdings found. Add a stock to get started!</td></tr>
+                  <tr><td colSpan="7" className="p-12 text-center text-slate-500 dark:text-slate-400 font-medium transition-colors">No holdings found. Add a stock to get started!</td></tr>
                 )}
               </tbody>
               {displayHoldings.length > 0 && (
-                <tfoot className="bg-slate-950/40 border-t border-slate-800">
+                <tfoot className="bg-slate-50 dark:bg-slate-950/40 border-t border-slate-200 dark:border-slate-800 transition-colors">
                   <tr>
-                    <td colSpan="2" className="p-5 font-bold text-slate-200 text-lg">Portfolio Summary</td>
-                    <td className="p-5 text-right text-slate-400">Total Inv:<br/><span className="text-slate-200">₹{totalInvested.toFixed(2)}</span></td>
-                    <td className="p-5 text-right text-slate-400">Current Val:<br/><span className="text-slate-200">₹{currentVal.toFixed(2)}</span></td>
+                    <td colSpan="2" className="p-5 font-bold text-slate-800 dark:text-slate-200 text-lg transition-colors">Portfolio Summary</td>
+                    <td className="p-5 text-right text-slate-500 dark:text-slate-400 transition-colors">Total Inv:<br/><span className="text-slate-800 dark:text-slate-200">₹{totalInvested.toFixed(2)}</span></td>
+                    <td className="p-5 text-right text-slate-500 dark:text-slate-400 transition-colors">Current Val:<br/><span className="text-slate-800 dark:text-slate-200">₹{currentVal.toFixed(2)}</span></td>
                     <td colSpan="2" className="p-5 text-right">
-                      <div className="text-slate-400 mb-1">Total PnL</div>
-                      <div className={`font-bold text-xl ${totalPnL >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      <div className="text-slate-500 dark:text-slate-400 mb-1 transition-colors">Total PnL</div>
+                      <div className={`font-bold text-xl ${totalPnL >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'} transition-colors`}>
                         {totalPnL >= 0 ? '+' : ''}₹{totalPnL.toFixed(2)} <span className="text-base opacity-80">({pnlPercent >= 0 ? '+' : ''}{pnlPercent.toFixed(2)}%)</span>
                       </div>
                     </td>

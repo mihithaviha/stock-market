@@ -80,87 +80,87 @@ const Settings = () => {
   };
 
   return (
-    <div className="p-8 max-w-4xl mx-auto font-sans text-slate-50">
-      <header className="mb-10 border-b border-slate-800 pb-6 flex items-center justify-between">
+    <div className="p-4 sm:p-8 max-w-4xl mx-auto font-sans text-slate-900 dark:text-slate-50 transition-colors duration-200">
+      <header className="mb-10 border-b border-slate-200 dark:border-slate-800 pb-6 flex items-center justify-between transition-colors">
         <div>
-           <h1 className="text-3xl font-bold tracking-tight mb-2 flex items-center gap-3">
-              <div className="p-2 bg-slate-800/80 rounded-xl"><SettingsIcon className="text-slate-400" size={32}/></div>
+           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2 flex items-center gap-3">
+              <div className="p-2 bg-slate-100 dark:bg-slate-800/80 rounded-xl transition-colors"><SettingsIcon className="text-slate-600 dark:text-slate-400 transition-colors" size={32}/></div>
               Preferences
            </h1>
-           <p className="text-slate-400 mt-1">Manage your account settings and notification logic.</p>
+           <p className="text-slate-500 dark:text-slate-400 mt-1 transition-colors">Manage your account settings and notification logic.</p>
         </div>
       </header>
 
       <div className="space-y-6">
          {/* Identity */}
-         <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
-            <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-slate-200"><UserIcon size={20} className="text-indigo-400"/> Personal Details</h2>
+         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-xl transition-colors duration-200">
+            <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-slate-900 dark:text-slate-200 transition-colors"><UserIcon size={20} className="text-indigo-600 dark:text-indigo-400 transition-colors"/> Personal Details</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-2">First Name</label>
-                  <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-4 text-slate-100 focus:border-blue-500 focus:outline-none" placeholder="Jane"/>
+                  <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2 transition-colors">First Name</label>
+                  <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-4 text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:outline-none transition-colors" placeholder="Jane"/>
                </div>
                <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-2">Last Name</label>
-                  <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-4 text-slate-100 focus:border-blue-500 focus:outline-none" placeholder="Doe"/>
+                  <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2 transition-colors">Last Name</label>
+                  <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-4 text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:outline-none transition-colors" placeholder="Doe"/>
                </div>
                <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-2">Phone Number</label>
-                  <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-4 text-slate-100 focus:border-blue-500 focus:outline-none" placeholder="+91 9876543210"/>
+                  <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2 transition-colors">Phone Number</label>
+                  <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-4 text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:outline-none transition-colors" placeholder="+91 9876543210"/>
                </div>
                <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-2">Address</label>
-                  <input type="text" value={address} onChange={e => setAddress(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-4 text-slate-100 focus:border-blue-500 focus:outline-none" placeholder="City, Country"/>
+                  <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2 transition-colors">Address</label>
+                  <input type="text" value={address} onChange={e => setAddress(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-4 text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:outline-none transition-colors" placeholder="City, Country"/>
                </div>
             </div>
          </div>
 
          {/* Security */}
-         <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
-            <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-slate-200"><Shield size={20} className="text-blue-400"/> Account Security</h2>
+         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-xl transition-colors duration-200">
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-slate-900 dark:text-slate-200 transition-colors"><Shield size={20} className="text-blue-600 dark:text-blue-400 transition-colors"/> Account Security</h2>
             <div className="flex items-center gap-4">
-               <div className="w-16 h-16 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center text-xl font-bold text-slate-400">
+               <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 flex items-center justify-center text-xl font-bold text-slate-600 dark:text-slate-400 transition-colors">
                  {(firstName ? firstName.charAt(0) : user?.email?.charAt(0))?.toUpperCase() || 'U'}
                </div>
                <div>
-                  <div className="font-medium text-slate-200">{user?.email || 'mock@example.com'}</div>
-                  <div className="text-sm text-slate-500">Standard User Account</div>
+                  <div className="font-medium text-slate-900 dark:text-slate-200 transition-colors">{user?.email || 'mock@example.com'}</div>
+                  <div className="text-sm text-slate-500 transition-colors">Standard User Account</div>
                </div>
             </div>
             <div className="mt-6 flex justify-end">
-               <button onClick={() => setShowPwdModal(true)} className="px-4 py-2 border border-slate-700 hover:bg-slate-800 rounded-lg text-sm text-slate-300 transition-colors font-medium">Change Password</button>
+               <button onClick={() => setShowPwdModal(true)} className="px-4 py-2 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-sm text-slate-700 dark:text-slate-300 transition-colors font-medium">Change Password</button>
             </div>
          </div>
 
          {/* Notifications */}
-         <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
-            <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-slate-200"><Bell size={20} className="text-amber-400"/> Communication Alerts</h2>
+         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-xl transition-colors duration-200">
+            <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-slate-900 dark:text-slate-200 transition-colors"><Bell size={20} className="text-amber-500 dark:text-amber-400 transition-colors"/> Communication Alerts</h2>
             
             <div className="space-y-4">
-               <div className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-slate-800/50">
+               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800/50 gap-4 sm:gap-0 transition-colors">
                   <div>
-                    <div className="font-bold text-slate-200">Daily Portfolio Email Digest</div>
-                    <div className="text-sm text-slate-400">Receive an email every day with your summary PnL.</div>
+                    <div className="font-bold text-slate-900 dark:text-slate-200 transition-colors">Daily Portfolio Email Digest</div>
+                    <div className="text-sm text-slate-500 dark:text-slate-400 transition-colors">Receive an email every day with your summary PnL.</div>
                   </div>
                   <div className="flex items-center gap-4">
                     <input 
                       type="time" 
                       value={alertTime} 
                       onChange={(e) => setAlertTime(e.target.value)}
-                      className="bg-slate-900 border border-slate-700 rounded-md px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
+                      className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md px-3 py-1.5 text-sm text-slate-900 dark:text-slate-200 focus:outline-none focus:border-blue-500 transition-colors"
                     />
-                    <button onClick={() => setEmailAlerts(!emailAlerts)} className={`w-12 h-6 rounded-full transition-colors relative ${emailAlerts ? 'bg-indigo-500' : 'bg-slate-700'}`}>
+                    <button onClick={() => setEmailAlerts(!emailAlerts)} className={`w-12 h-6 rounded-full transition-colors relative ${emailAlerts ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-700'}`}>
                       <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${emailAlerts ? 'translate-x-7' : 'translate-x-1'}`} />
                     </button>
                   </div>
                </div>
 
-               <div className="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-slate-800/50">
+               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800/50 gap-4 sm:gap-0 transition-colors">
                   <div>
-                    <div className="font-bold text-slate-200">Breaking Smart News</div>
-                    <div className="text-sm text-slate-400">Receive urgent emails if a stock you own crashes or surges.</div>
+                    <div className="font-bold text-slate-900 dark:text-slate-200 transition-colors">Breaking Smart News</div>
+                    <div className="text-sm text-slate-500 dark:text-slate-400 transition-colors">Receive urgent emails if a stock you own crashes or surges.</div>
                   </div>
-                  <button onClick={() => setNewsAlerts(!newsAlerts)} className={`w-12 h-6 rounded-full transition-colors relative ${newsAlerts ? 'bg-indigo-500' : 'bg-slate-700'}`}>
+                  <button onClick={() => setNewsAlerts(!newsAlerts)} className={`w-12 h-6 rounded-full transition-colors relative ${newsAlerts ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-700'}`}>
                     <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${newsAlerts ? 'translate-x-7' : 'translate-x-1'}`} />
                   </button>
                </div>
@@ -168,39 +168,39 @@ const Settings = () => {
          </div>
 
          <div className="flex justify-end gap-3 mt-8">
-            <button className="px-6 py-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 font-medium transition-colors">Discard</button>
+            <button className="px-6 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl text-slate-700 dark:text-slate-300 font-medium transition-colors">Discard</button>
             <button onClick={handleSave} disabled={isSaving} className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-xl text-white font-medium flex items-center gap-2 transition-colors"><Save size={18}/> {isSaving ? 'Saving...' : 'Save Changes'}</button>
          </div>
       </div>
 
       {/* Password Reset Modal */}
       {showPwdModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl">
-            <h3 className="text-xl font-bold mb-4">Reset Password</h3>
-            {pwdMsg && <div className="mb-4 text-sm font-semibold p-2 bg-slate-800 rounded text-amber-400">{pwdMsg}</div>}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 dark:bg-slate-950/80 backdrop-blur-sm transition-colors duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl transition-colors duration-200">
+            <h3 className="text-xl font-bold mb-4 text-slate-900 dark:text-white transition-colors">Reset Password</h3>
+            {pwdMsg && <div className="mb-4 text-sm font-semibold p-2 bg-slate-100 dark:bg-slate-800 rounded text-amber-600 dark:text-amber-400 transition-colors">{pwdMsg}</div>}
             
             {!otpSent ? (
                <div>
-                  <p className="text-sm text-slate-400 mb-4">We will send a 6-digit confirmation code to your email.</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 transition-colors">We will send a 6-digit confirmation code to your email.</p>
                   <div className="flex gap-3">
-                     <button onClick={() => setShowPwdModal(false)} className="flex-1 px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium">Cancel</button>
-                     <button onClick={handleRequestOtp} className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg font-medium">Send Code</button>
+                     <button onClick={() => setShowPwdModal(false)} className="flex-1 px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg font-medium text-slate-900 dark:text-white transition-colors">Cancel</button>
+                     <button onClick={handleRequestOtp} className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg font-medium text-white transition-colors">Send Code</button>
                   </div>
                </div>
             ) : (
                <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-400 mb-1">Enter 6-Digit OTP</label>
-                    <input type="text" value={otp} onChange={e => setOtp(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-100" />
+                    <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1 transition-colors">Enter 6-Digit OTP</label>
+                    <input type="text" value={otp} onChange={e => setOtp(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-slate-900 dark:text-slate-100 transition-colors" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-400 mb-1">New Password</label>
-                    <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-slate-100" />
+                    <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1 transition-colors">New Password</label>
+                    <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-slate-900 dark:text-slate-100 transition-colors" />
                   </div>
                   <div className="flex gap-3 mt-2">
-                     <button onClick={() => setShowPwdModal(false)} className="flex-1 px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg font-medium">Cancel</button>
-                     <button onClick={handleResetPassword} className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg font-medium">Update</button>
+                     <button onClick={() => setShowPwdModal(false)} className="flex-1 px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg font-medium text-slate-900 dark:text-white transition-colors">Cancel</button>
+                     <button onClick={handleResetPassword} className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg font-medium text-white transition-colors">Update</button>
                   </div>
                </div>
             )}
