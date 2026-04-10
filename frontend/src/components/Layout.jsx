@@ -57,8 +57,8 @@ const Layout = () => {
             
             {/* Logo and Brand */}
             <div className="flex items-center gap-3 text-xl font-bold tracking-tight">
-              <div className="p-2 bg-blue-100 dark:bg-blue-500/10 rounded-xl border border-blue-200 dark:border-blue-500/20 transition-colors">
-                <TrendingUp className="text-blue-600 dark:text-blue-500" size={20}/>
+              <div className="p-1 bg-blue-100 dark:bg-blue-500/10 rounded-xl border border-blue-200 dark:border-blue-500/20 transition-colors flex items-center justify-center w-10 h-10">
+                <img src="/logo.png" alt="Tradezy Logo" className="w-full h-full object-contain drop-shadow-md" />
               </div>
               <span className="text-slate-900 dark:text-white transition-colors">Tradezy</span>
             </div>

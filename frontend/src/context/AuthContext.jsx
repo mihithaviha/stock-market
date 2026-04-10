@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import api from '../lib/api.js';
 
 const AuthContext = createContext({});
-const API_URL = import.meta.env.VITE_API_URL || 'https://stock-market-bm5j.onrender.com/api/auth';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -29,11 +29,9 @@ export const AuthProvider = ({ children }) => {
         return;
       }
       try {
-        const res = await fetch(`${API_URL}/me`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const data = await res.json();
-        if (res.ok && data.user) {
+        const res = await api.get('/auth/me');
+        const data = res.data;
+        if (data && data.user) {
           setUser(data.user);
           setIsAdmin(data.user.email === 'viharinimihitha@gmail.com');
         } else {
@@ -49,39 +47,29 @@ export const AuthProvider = ({ children }) => {
 
   const signUp = async (email, password) => {
     try {
-      const res = await fetch(`${API_URL}/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Signup failed');
+      const res = await api.post('/auth/register', { email, password });
+      const data = res.data;
       
       localStorage.setItem('tradezy_token', data.token);
       setUser(data.user);
       setIsAdmin(data.user.email === 'viharinimihitha@gmail.com');
       return { data: { user: data.user }, error: null };
     } catch (e) {
-      return { data: null, error: e };
+      return { data: null, error: e.response?.data?.error || e.message };
     }
   };
 
   const signIn = async (email, password) => {
     try {
-      const res = await fetch(`${API_URL}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Login failed');
+      const res = await api.post('/auth/login', { email, password });
+      const data = res.data;
 
       localStorage.setItem('tradezy_token', data.token);
       setUser(data.user);
       setIsAdmin(data.user.email === 'viharinimihitha@gmail.com');
       return { data: { user: data.user }, error: null };
     } catch (e) {
-      return { data: null, error: e };
+      return { data: null, error: e.response?.data?.error || e.message };
     }
   };
 
@@ -101,7 +89,8 @@ export const AuthProvider = ({ children }) => {
 
   const signInWithGoogle = () => {
     // Redirect browser directly to the Express Google Auth Route
-    window.location.href = `${API_URL}/google`;
+    const API_URL = import.meta.env.VITE_API_BASE || 'https://stock-market-bm5j.onrender.com/api';
+    window.location.href = `${API_URL}/auth/google`;
   };
 
   return (

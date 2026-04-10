@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { TrendingUp, ArrowRight, ArrowLeft } from 'lucide-react';
+import api from '../lib/api.js';
 
 const Auth = () => {
   const [step, setStep] = useState(1); // 1: Email, 2: Password
@@ -19,14 +20,8 @@ const Auth = () => {
 
     setLoading(true);
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://stock-market-bm5j.onrender.com/api/auth';
-      const res = await fetch(`${API_URL}/check`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
-      const data = await res.json();
-      setIsLogin(data.exists);
+      const res = await api.post('/auth/check', { email });
+      setIsLogin(res.data.exists);
       setStep(2);
     } catch(err) {
        console.error("Checking email failed, defaulting to Sign Up.", err);
@@ -48,15 +43,10 @@ const Auth = () => {
         if (error) throw error;
         
         try {
-          const API_BASE = import.meta.env.VITE_API_BASE || 'https://stock-market-bm5j.onrender.com/api';
-          await fetch(`${API_BASE}/emails/send-login-alert`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              userEmail: email, 
-              userName: email.split('@')[0],
-              metadata: { time: new Date().toLocaleString(), device: 'Web Browser', location: 'Unknown' }
-            })
+          await api.post(`/emails/send-login-alert`, { 
+            userEmail: email, 
+            userName: email.split('@')[0],
+            metadata: { time: new Date().toLocaleString(), device: 'Web Browser', location: 'Unknown' }
           });
         } catch (mailErr) {}
       } else {
@@ -65,14 +55,9 @@ const Auth = () => {
         alert('Check your email for the confirmation link or log in if auto-confirmed!');
         
         try {
-          const API_BASE = import.meta.env.VITE_API_BASE || 'https://stock-market-bm5j.onrender.com/api';
-          await fetch(`${API_BASE}/emails/send-welcome-email`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              userEmail: email, 
-              userName: email.split('@')[0]
-            })
+          await api.post(`/emails/send-welcome-email`, { 
+            userEmail: email, 
+            userName: email.split('@')[0]
           });
         } catch (mailErr) {}
       }
@@ -84,21 +69,23 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 text-slate-50 font-sans">
-      <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl relative">
+    <div className="min-h-screen dark:bg-slate-950 bg-slate-50 flex items-center justify-center p-4 dark:text-slate-50 text-slate-900 font-sans transition-colors duration-200">
+      <div className="max-w-md w-full dark:bg-slate-900 bg-white border dark:border-slate-800 border-slate-200 rounded-3xl p-8 shadow-2xl relative transition-colors duration-200">
         {step === 2 && (
            <button onClick={() => setStep(1)} className="absolute top-8 left-8 text-slate-500 hover:text-slate-300 transition-colors">
               <ArrowLeft size={24} />
            </button>
         )}
         <div className="flex justify-center mb-8">
-          <div className="flex items-center gap-2 text-3xl font-bold tracking-tight">
-             <TrendingUp className="text-blue-500" size={32} />
-             <span>Tradezy</span>
+          <div className="flex items-center gap-3 text-3xl font-bold tracking-tight">
+            <div className="p-1 bg-blue-100 dark:bg-blue-500/10 rounded-xl border border-blue-200 dark:border-blue-500/20 transition-colors flex items-center justify-center w-12 h-12">
+              <img src="/logo.png" alt="Tradezy Logo" className="w-full h-full object-contain drop-shadow-md" />
+            </div>
+            <span className="text-slate-900 dark:text-white transition-colors">Tradezy</span>
           </div>
         </div>
         
-        <h2 className="text-2xl font-semibold mb-6 text-center text-slate-200">
+        <h2 className="text-2xl font-semibold mb-6 text-center dark:text-slate-200 text-slate-800 transition-colors duration-200">
           {step === 1 ? 'Unlock your portfolio' : isLogin ? 'Welcome back' : 'Create your account'}
         </h2>
         
@@ -111,13 +98,13 @@ const Auth = () => {
         {step === 1 ? (
           <form onSubmit={handleEmailSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-slate-400 mb-1.5 ml-1">Email</label>
+              <label className="block text-sm font-medium dark:text-slate-400 text-slate-600 mb-1.5 ml-1 transition-colors duration-200">Email</label>
               <input 
                 type="email" 
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-inner"
+                className="w-full dark:bg-slate-950 bg-slate-50 border dark:border-slate-800 border-slate-300 rounded-xl py-3 px-4 dark:text-slate-100 text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors duration-200 shadow-inner"
                 placeholder="you@example.com"
               />
             </div>
@@ -131,15 +118,15 @@ const Auth = () => {
             </button>
 
             <div className="relative flex items-center py-2">
-              <div className="flex-grow border-t border-slate-700"></div>
+              <div className="flex-grow border-t dark:border-slate-700 border-slate-300 transition-colors duration-200"></div>
               <span className="flex-shrink-0 mx-4 text-slate-500 text-sm">Or</span>
-              <div className="flex-grow border-t border-slate-700"></div>
+              <div className="flex-grow border-t dark:border-slate-700 border-slate-300 transition-colors duration-200"></div>
             </div>
 
             <button
               type="button"
               onClick={useAuth().signInWithGoogle}
-              className="w-full bg-slate-800 hover:bg-slate-700 text-white font-medium py-3 rounded-xl transition-colors flex justify-center items-center gap-2 border border-slate-700"
+              className="w-full dark:bg-slate-800 bg-white hover:dark:bg-slate-700 hover:bg-slate-100 dark:text-white text-slate-800 font-medium py-3 rounded-xl transition-colors duration-200 flex justify-center items-center gap-2 border dark:border-slate-700 border-slate-300"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -152,17 +139,17 @@ const Auth = () => {
           </form>
         ) : (
           <form onSubmit={handleAuthSubmit} className="space-y-5">
-            <div className="text-sm text-center text-slate-400 mb-4 bg-slate-950/50 py-2 rounded-xl border border-slate-800/50">
+            <div className="text-sm text-center dark:text-slate-400 text-slate-600 mb-4 dark:bg-slate-950/50 bg-slate-100 py-2 rounded-xl border dark:border-slate-800/50 border-slate-300 transition-colors duration-200">
                {email}
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-400 mb-1.5 ml-1">Password</label>
+              <label className="block text-sm font-medium dark:text-slate-400 text-slate-600 mb-1.5 ml-1 transition-colors duration-200">Password</label>
               <input 
                 type="password" 
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-inner"
+                className="w-full dark:bg-slate-950 bg-slate-50 border dark:border-slate-800 border-slate-300 rounded-xl py-3 px-4 dark:text-slate-100 text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors duration-200 shadow-inner"
                 placeholder="••••••••"
               />
             </div>

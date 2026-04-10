@@ -83,7 +83,7 @@ const shouldSendEmail = (userEmail, type, frequency = 'once') => {
   return true;
 };
 
-const ownerSender = '"Viharinimihitha" <viharinimihitha@gmail.com>';
+const ownerSender = '"Tradezy" <viharinimihitha@gmail.com>';
 
 /* --- NEW EMAIL METHODS --- */
 

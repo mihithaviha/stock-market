@@ -20,12 +20,11 @@ export const handleRazorpayPayment = async (user, onSuccess) => {
         order_id: order.id,
         handler: async function (response) {
             try {
-               await api.post('https://stock-market-bm5j.onrender.com/api/payment/verify', {
+               await api.post('/payment/verify', {
                   razorpay_payment_id: response.razorpay_payment_id,
                   razorpay_order_id: response.razorpay_order_id,
                   razorpay_signature: response.razorpay_signature
-               }, { headers: { 'x-user-id': user.id || 'mock-id' } });
-
+               });
                toast.success('Successfully upgraded to Premium! 🎉');
                if (onSuccess) onSuccess();
             } catch (err) {

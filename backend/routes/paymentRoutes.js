@@ -2,8 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
-const supabase = require('../supabase');
-
+const User = require('../models/User');
 // Middleware to attach userId (pseudo imported here)
 const { attachUserId } = require('../middleware/authMiddleware');
 
@@ -39,7 +38,7 @@ router.post('/verify', attachUserId, async (req, res) => {
     if (razorpay_signature === expectedSign) {
       // Payment is successful
       try {
-        await supabase.from('users').update({ plan_type: 'PREMIUM' }).eq('id', req.userId);
+        await User.findByIdAndUpdate(req.userId, { plan_type: 'PREMIUM' });
       } catch (e) { console.error("Failed to upgrade in DB", e); }
       res.status(200).json({ success: true, message: "Payment verified successfully" });
     } else {
