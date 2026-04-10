@@ -78,8 +78,8 @@ const Auth = () => {
         )}
         <div className="flex justify-center mb-8">
           <div className="flex items-center gap-3 text-3xl font-bold tracking-tight">
-            <div className="p-1 bg-blue-100 dark:bg-blue-500/10 rounded-xl border border-blue-200 dark:border-blue-500/20 transition-colors flex items-center justify-center w-12 h-12">
-              <img src="/logo.png" alt="Tradezy Logo" className="w-full h-full object-contain drop-shadow-md" />
+            <div className="p-1 bg-blue-100 dark:bg-blue-500/10 rounded-xl border border-blue-200 dark:border-blue-500/20 transition-colors flex items-center justify-center w-12 h-12 overflow-hidden">
+              <img src="/logo.png" alt="Tradezy Logo" className="w-full h-full object-cover object-left drop-shadow-md" />
             </div>
             <span className="text-slate-900 dark:text-white transition-colors">Tradezy</span>
           </div>

@@ -19,47 +19,12 @@ const LearnStocks = () => {
   const { user, updateUserPlan } = useAuth();
   const todayConcept = conceptsOfTheDay[new Date().getDay()];
 
-  // Tutor Chat State
-  const [chatOpen, setChatOpen] = useState(false);
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  
   const handleUpgrade = () => {
      handleRazorpayPayment(user, () => {
         updateUserPlan('PREMIUM');
      });
   };
-  const [messages, setMessages] = useState([
-    { role: 'assistant', content: "Hi! I'm your Academy AI Tutor. Ask me any basic question about the stock market, terms, or how trading works!" }
-  ]);
-  const messagesEndRef = useRef(null);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, chatOpen]);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!input.trim()) return;
-
-    const userMsg = input.trim();
-    setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
-    setInput('');
-    setLoading(true);
-
-    try {
-      const res = await api.post('https://stock-market-bm5j.onrender.com/api/chatbot', { 
-         message: userMsg,
-         systemInstruction: "You are a patient, encouraging, specialized Stock Market Teacher for absolute beginners. Explain everything using extremely simple analogies. Never overwhelm the user."
-      }, { headers: { 'x-user-id': user?.id || 'mock-id' } });
-
-      setMessages(prev => [...prev, { role: 'assistant', content: res.data.reply }]);
-    } catch (err) {
-      setMessages(prev => [...prev, { role: 'assistant', content: "I'm sorry, my connection to the Academy network failed." }]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="p-4 sm:p-8 max-w-7xl mx-auto font-sans text-slate-900 dark:text-slate-50 transition-colors duration-200">
@@ -152,56 +117,7 @@ const LearnStocks = () => {
          </div>
       </div>
 
-      {/* Floating AI Tutor */}
-      {chatOpen ? (
-        <div className="fixed bottom-6 right-6 w-[400px] max-w-[90vw] h-[550px] max-h-[80vh] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl shadow-2xl flex flex-col z-50 overflow-hidden transform transition-all duration-300">
-          <div className="p-4 bg-blue-600 border-b border-blue-700 flex items-center justify-between shadow-lg">
-             <div className="flex items-center gap-3">
-                <div className="bg-blue-500 rounded-full p-2"><Bot size={20} className="text-white"/></div>
-                <h3 className="font-bold text-white text-lg tracking-wide">Academy Tutor</h3>
-             </div>
-             <button onClick={() => setChatOpen(false)} className="text-blue-200 hover:text-white transition-colors bg-blue-700/50 hover:bg-blue-700 p-1.5 rounded-full"><X size={20}/></button>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 dark:bg-slate-950/50 transition-colors">
-             {messages.map((msg, i) => (
-                <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  {msg.role === 'assistant' && (
-                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-600/30 flex items-center justify-center border border-blue-200 dark:border-blue-500/30 flex-shrink-0 transition-colors">
-                      <GraduationCap size={16} className="text-blue-600 dark:text-blue-400 transition-colors" />
-                    </div>
-                  )}
-                  <div className={`max-w-[80%] p-4 text-[14px] leading-relaxed shadow-sm transition-colors ${msg.role === 'user' ? 'bg-blue-600 text-white rounded-2xl rounded-br-none' : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-2xl rounded-bl-none border border-slate-200 dark:border-slate-700/50'}`}>
-                    {msg.content}
-                  </div>
-                </div>
-             ))}
-             {loading && (
-                <div className="flex gap-3 justify-start">
-                  <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-600/30 flex items-center justify-center border border-blue-200 dark:border-blue-500/30 flex-shrink-0 transition-colors">
-                    <GraduationCap size={16} className="text-blue-600 dark:text-blue-400 transition-colors" />
-                  </div>
-                  <div className="bg-white dark:bg-slate-800 text-slate-400 p-4 rounded-2xl rounded-bl-none border border-slate-200 dark:border-slate-700/50 flex items-center gap-2 transition-colors">
-                    <div className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500 animate-bounce transition-colors"></div>
-                    <div className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500 animate-bounce delay-100 transition-colors"></div>
-                    <div className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500 animate-bounce delay-200 transition-colors"></div>
-                  </div>
-                </div>
-             )}
-             <div ref={messagesEndRef} />
-          </div>
 
-          <form onSubmit={handleSubmit} className="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex gap-2 transition-colors">
-             <input type="text" value={input} onChange={(e) => setInput(e.target.value)} disabled={loading} placeholder="Ask me something..." className="flex-1 bg-slate-100 dark:bg-slate-800 border-none rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-white outline-none focus:ring-1 focus:ring-blue-500 placeholder:text-slate-500 transition-colors"/>
-             <button type="submit" disabled={loading || !input.trim()} className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 rounded-xl transition-colors shrink-0"><Send size={18}/></button>
-          </form>
-        </div>
-      ) : (
-        <button onClick={() => setChatOpen(true)} className="fixed bottom-6 right-6 p-4 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-2xl hover:shadow-blue-500/50 transform hover:-translate-y-1 transition-all z-50 flex items-center justify-center border-4 border-white dark:border-slate-950">
-           <Bot size={32} />
-           <div className="absolute -top-2 -right-2 bg-rose-500 w-4 h-4 rounded-full border-2 border-white dark:border-slate-950 animate-pulse transition-colors"></div>
-        </button>
-      )}
     </div>
   );
 };
