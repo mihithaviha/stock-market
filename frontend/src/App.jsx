@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { WebSocketProvider } from './context/WebSocketContext';
+import { ThemeProvider } from './context/ThemeContext';
 import Auth from './pages/Auth';
 import AdminAuth from './pages/AdminAuth';
 import Layout from './components/Layout';
@@ -60,8 +61,9 @@ function AppRoutes() {
 
 function App() {
   return (
-    <AuthProvider>
-      <WebSocketProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <WebSocketProvider>
         <BrowserRouter>
           <AppRoutes />
           <Toaster
@@ -76,8 +78,9 @@ function App() {
             }}
           />
         </BrowserRouter>
-      </WebSocketProvider>
-    </AuthProvider>
+        </WebSocketProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

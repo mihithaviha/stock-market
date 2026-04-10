@@ -3,7 +3,7 @@ const router = express.Router();
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../middleware/authMiddleware');
-const { sendOtpEmail, sendLoginAlert } = require('../services/emailService');
+const { sendOtpEmail, sendLoginAlert, sendWelcomeEmail } = require('../services/emailService');
 
 const generateToken = (userId, plan_type) => {
   return jwt.sign({ userId, plan_type }, JWT_SECRET, { expiresIn: '30d' });
@@ -33,6 +33,10 @@ router.post('/register', async (req, res) => {
     }
 
     const user = await User.create({ email, password });
+    
+    // Fire off async welcome email
+    sendWelcomeEmail(user.email, user.first_name || 'Trader').catch(e => console.error("Welcome Email Error:", e));
+
     const token = generateToken(user._id, user.plan_type);
 
     res.status(201).json({ user: { id: user._id, email: user.email, plan_type: user.plan_type }, token });

@@ -330,13 +330,52 @@ app.get('/api/admin/stats', async (req, res) => {
   }
 });
 
-const initCronJobs = require('./jobs/cronJobs');
+const { initCronJobs, executeDailyReport, executeNewsAlert } = require('./jobs/cronJobs');
 
 initCronJobs();
+
+app.get('/api/ping', (req, res) => {
+  res.status(200).send('pong');
+});
+
+// For external cron-job.org triggering
+app.get('/api/cron/daily-report', async (req, res) => {
+  try {
+    await executeDailyReport(true); // force trigger
+    res.status(200).json({ success: true, message: 'Daily report triggered.' });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/cron/news-alerts', async (req, res) => {
+  try {
+    await executeNewsAlert();
+    res.status(200).json({ success: true, message: 'News alerts triggered.' });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 
 const startServer = (port) => {
   server.listen(port, () => {
     console.log(`Server running on port ${port}`);
+
+    // Keep-alive ping for Render free tier so crons & live rates keep running
+    // Render populates RENDER_EXTERNAL_URL automatically.
+    const renderUrl = process.env.RENDER_EXTERNAL_URL || process.env.BACKEND_URL;
+    if (renderUrl) {
+      console.log(`Setting up 14-min keep-alive ping for: ${renderUrl}`);
+      setInterval(() => {
+        try {
+          http.get(`${renderUrl}/api/ping`);
+          console.log(`[Keep-Alive] Pinged ${renderUrl} to prevent sleep.`);
+        } catch (e) {
+          console.error('[Keep-Alive] Ping failed', e.message);
+        }
+      }, 14 * 60 * 1000); // every 14 mins
+    }
+
   }).on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
       console.log(`Port ${port} is already in use. Attempting to restart or please close other instances.`);
