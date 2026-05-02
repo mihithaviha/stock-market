@@ -117,6 +117,38 @@ const LearnStocks = () => {
          </div>
       </div>
 
+      <div className="mt-12 mb-8 border-t border-slate-200 dark:border-slate-800 pt-10">
+         <h2 className="text-3xl font-bold mb-8 flex items-center gap-3 text-slate-900 dark:text-white transition-colors">
+            <BookOpen className="text-indigo-500 dark:text-indigo-400 transition-colors" size={32}/>
+            Advanced Concepts & Strategies
+         </h2>
+         <div className="grid md:grid-cols-2 gap-6">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-lg hover:border-indigo-500/30 transition-all">
+               <h3 className="text-xl font-bold mb-3 text-slate-800 dark:text-slate-200">Derivatives & Options Trading</h3>
+               <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
+                  Learn how calls, puts, and strike prices work. Options pricing and the Greeks are advanced concepts many courses focus on for hedging and leveraged gains.
+               </p>
+            </div>
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-lg hover:border-indigo-500/30 transition-all">
+               <h3 className="text-xl font-bold mb-3 text-slate-800 dark:text-slate-200">Technical Analysis (Indicators)</h3>
+               <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
+                  Study patterns using moving averages (SMA/EMA), Relative Strength Index (RSI), and MACD to predict price trends and find optimal entry and exit points.
+               </p>
+            </div>
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-lg hover:border-indigo-500/30 transition-all">
+               <h3 className="text-xl font-bold mb-3 text-slate-800 dark:text-slate-200">Fundamental Analysis</h3>
+               <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
+                  Learn how to read balance sheets, income statements, and cash flow statements, and calculate P/E ratios and EPS to evaluate a company's financial health.
+               </p>
+            </div>
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-lg hover:border-indigo-500/30 transition-all">
+               <h3 className="text-xl font-bold mb-3 text-slate-800 dark:text-slate-200">Macroeconomics & Market Cycles</h3>
+               <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
+                  Understand the impact of interest rates, inflation, and sector rotation on the broader market to position your portfolio for long-term macroeconomic shifts.
+               </p>
+            </div>
+         </div>
+      </div>
 
     </div>
   );

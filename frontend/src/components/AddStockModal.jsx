@@ -31,26 +31,31 @@ const AddStockModal = ({ isOpen, onClose, onAdded }) => {
     }
   }, [isOpen, user]);
 
-  const handleSearch = async (e) => {
+  const handleSearch = (e) => {
     const val = e.target.value;
     setSearchQuery(val);
     setTicker(val.toUpperCase());
-
-    if (val.length < 1) {
-      setSearchResults([]);
-      return;
-    }
-
-    setIsSearching(true);
-    try {
-      const res = await api.get(`/market/search?q=${val}`);
-      setSearchResults(res.data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsSearching(false);
-    }
   };
+
+  React.useEffect(() => {
+    const delayDebounce = setTimeout(async () => {
+      if (searchQuery.trim() !== '') {
+        setIsSearching(true);
+        try {
+          const res = await api.get(`/market/search?q=${searchQuery}`);
+          setSearchResults(res.data);
+        } catch (err) {
+          console.error(err);
+        } finally {
+          setIsSearching(false);
+        }
+      } else {
+        setSearchResults([]);
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounce);
+  }, [searchQuery]);
 
   const selectStock = async (symbol) => {
     setTicker(symbol);

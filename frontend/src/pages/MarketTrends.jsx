@@ -9,17 +9,49 @@ const MarketTrends = () => {
   const { livePrices, subscribeToTicker } = useWebSocket();
   const [trends, setTrends] = useState({ topGainers: [], topLosers: [], mostActive: [] });
   const [loading, setLoading] = useState(true);
+  const [visibleCount, setVisibleCount] = useState(15);
   
   // Financial Analyzer State
   const [searchTicker, setSearchTicker] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
   const [financials, setFinancials] = useState(null);
   const [finLoading, setFinLoading] = useState(false);
 
   useEffect(() => {
+    const delayDebounce = setTimeout(async () => {
+      if (searchTicker.trim() !== '') {
+        setIsSearching(true);
+        try {
+          const res = await api.get(`/market/search?q=${searchTicker}`);
+          setSearchResults(res.data);
+          setShowDropdown(true);
+        } catch (err) {
+          console.error(err);
+        } finally {
+          setIsSearching(false);
+        }
+      } else {
+        setSearchResults([]);
+        setShowDropdown(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounce);
+  }, [searchTicker]);
+
+  useEffect(() => {
     const fetchTrends = async () => {
+      const cached = sessionStorage.getItem('marketTrendsCache');
+      if (cached) {
+        setTrends(JSON.parse(cached));
+        setLoading(false);
+      }
       try {
         const res = await api.get(`/market/trends`);
         setTrends(res.data);
+        sessionStorage.setItem('marketTrendsCache', JSON.stringify(res.data));
       } catch (e) { console.error(e); } finally { setLoading(false); }
     };
     fetchTrends();
@@ -56,7 +88,7 @@ const MarketTrends = () => {
          {label}
        </h2>
        <div className="space-y-3">
-          {list.map((q, i) => {
+          {list.slice(0, visibleCount).map((q, i) => {
              const livePrice = livePrices[q.symbol] || q.price;
              const diff = livePrice - q.price;
              // Calculate accurate current percentage based on live price over the base open price
@@ -93,10 +125,22 @@ const MarketTrends = () => {
       {loading ? (
         <div className="animate-pulse flex flex-wrap gap-6 mb-8"><div className="h-96 flex-1 min-w-[300px] bg-slate-200 dark:bg-slate-900 rounded-2xl transition-colors"></div><div className="h-96 flex-1 min-w-[300px] bg-slate-200 dark:bg-slate-900 rounded-2xl transition-colors"></div></div>
       ) : (
-        <div className="flex flex-wrap gap-6 mb-10">
-           {renderList('Top Gainers', trends.topGainers, true)}
-           {renderList('Top Losers', trends.topLosers, false)}
-           {renderList('Most Active', trends.mostActive, null)}
+        <div className="mb-10">
+          <div className="flex flex-wrap gap-6">
+             {renderList('Top Gainers', trends.topGainers, true)}
+             {renderList('Top Losers', trends.topLosers, false)}
+             {renderList('Most Active', trends.mostActive, null)}
+          </div>
+          {(trends.topGainers.length > visibleCount || trends.topLosers.length > visibleCount || trends.mostActive.length > visibleCount) && (
+            <div className="flex justify-center mt-6">
+              <button 
+                onClick={() => setVisibleCount(prev => prev + 15)}
+                className="bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-6 py-2 rounded-xl font-medium transition-colors"
+              >
+                Load More
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -106,9 +150,28 @@ const MarketTrends = () => {
              <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2"><DollarSign className="text-indigo-500"/> Quarterly Results Analyzer</h2>
              <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Check the fundamental health of any public company.</p>
            </div>
-           <div className="flex gap-2 w-full md:w-auto">
-             <input type="text" value={searchTicker} onChange={e => setSearchTicker(e.target.value.toUpperCase())} placeholder="Ticker (e.g. MSFT)" className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 py-2.5 px-4 rounded-xl focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-500 text-slate-900 dark:text-white w-full md:w-48 transition-colors" />
-             <button onClick={() => fetchFinancials(searchTicker)} className="bg-indigo-600 hover:bg-indigo-500 px-4 py-2.5 rounded-xl text-white font-medium flex items-center justify-center transition-colors">
+           <div className="flex gap-2 w-full md:w-auto relative">
+             <div className="relative w-full md:w-72">
+                 <input type="text" value={searchTicker} onChange={e => { setSearchTicker(e.target.value.toUpperCase()); setShowDropdown(true); }} placeholder="Ticker or Name (e.g. MSFT)" className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 py-2.5 px-4 rounded-xl focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-500 text-slate-900 dark:text-white w-full transition-colors" />
+                 {isSearching && <div className="absolute right-3 top-3 text-xs text-slate-500">...</div>}
+                 
+                 {showDropdown && searchResults.length > 0 && (
+                   <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-50 max-h-60 overflow-y-auto transition-colors">
+                     {searchResults.map(res => (
+                       <div key={res.symbol} onClick={() => { setSearchTicker(res.symbol); setShowDropdown(false); fetchFinancials(res.symbol); }} className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex justify-between items-center transition-colors border-b border-slate-100 dark:border-slate-800/50 last:border-0">
+                         <div>
+                           <div className="font-bold text-slate-900 dark:text-white text-sm transition-colors">{res.name}</div>
+                           <div className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[150px] transition-colors">{res.symbol}</div>
+                         </div>
+                         <div className="text-[10px] font-medium px-2 py-1 bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-md transition-colors whitespace-nowrap">
+                           {res.exchDisp}
+                         </div>
+                       </div>
+                     ))}
+                   </div>
+                 )}
+             </div>
+             <button onClick={() => { setShowDropdown(false); fetchFinancials(searchTicker); }} className="bg-indigo-600 hover:bg-indigo-500 px-4 py-2.5 rounded-xl text-white font-medium flex items-center justify-center transition-colors">
                <Search size={20} />
              </button>
            </div>
