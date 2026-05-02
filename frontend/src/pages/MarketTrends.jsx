@@ -12,7 +12,8 @@ const MarketTrends = () => {
   const [visibleCount, setVisibleCount] = useState(15);
   
   // Financial Analyzer State
-  const [searchTicker, setSearchTicker] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTicker, setActiveTicker] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -21,10 +22,10 @@ const MarketTrends = () => {
 
   useEffect(() => {
     const delayDebounce = setTimeout(async () => {
-      if (searchTicker.trim() !== '') {
+      if (searchQuery.trim() !== '') {
         setIsSearching(true);
         try {
-          const res = await api.get(`/market/search?q=${searchTicker}`);
+          const res = await api.get(`/market/search?q=${searchQuery}`);
           setSearchResults(res.data);
           setShowDropdown(true);
         } catch (err) {
@@ -39,7 +40,7 @@ const MarketTrends = () => {
     }, 500);
 
     return () => clearTimeout(delayDebounce);
-  }, [searchTicker]);
+  }, [searchQuery]);
 
   useEffect(() => {
     const fetchTrends = async () => {
@@ -68,6 +69,7 @@ const MarketTrends = () => {
        setFinancials(null);
        return;
     }
+    setActiveTicker(ticker);
     setFinLoading(true);
     try {
       const res = await api.get(`/stock/${ticker}/financials`);
@@ -97,7 +99,7 @@ const MarketTrends = () => {
              const liveChangePercent = basePrice > 0 ? ((livePrice - basePrice) / basePrice) * 100 : q.changePercent;
              
              return (
-             <div key={i} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800/50 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer" onClick={() => { setSearchTicker(q.symbol); fetchFinancials(q.symbol); }}>
+             <div key={i} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800/50 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer" onClick={() => { setSearchQuery(q.symbol); fetchFinancials(q.symbol); }}>
                 <div>
                    <div className="font-bold text-slate-900 dark:text-slate-100 transition-colors">{q.symbol}</div>
                    <div className="text-xs text-slate-500 dark:text-slate-500 truncate max-w-[120px] transition-colors">{q.name || 'Company'}</div>
@@ -152,13 +154,13 @@ const MarketTrends = () => {
            </div>
            <div className="flex gap-2 w-full md:w-auto relative">
              <div className="relative w-full md:w-72">
-                 <input type="text" value={searchTicker} onChange={e => { setSearchTicker(e.target.value.toUpperCase()); setShowDropdown(true); }} placeholder="Ticker or Name (e.g. MSFT)" className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 py-2.5 px-4 rounded-xl focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-500 text-slate-900 dark:text-white w-full transition-colors" />
+                 <input type="text" value={searchQuery} onChange={e => { setSearchQuery(e.target.value.toUpperCase()); setShowDropdown(true); }} placeholder="Ticker or Name (e.g. MSFT)" className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 py-2.5 px-4 rounded-xl focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-500 text-slate-900 dark:text-white w-full transition-colors" />
                  {isSearching && <div className="absolute right-3 top-3 text-xs text-slate-500">...</div>}
                  
                  {showDropdown && searchResults.length > 0 && (
                    <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-50 max-h-60 overflow-y-auto transition-colors">
                      {searchResults.map(res => (
-                       <div key={res.symbol} onClick={() => { setSearchTicker(res.symbol); setShowDropdown(false); fetchFinancials(res.symbol); }} className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex justify-between items-center transition-colors border-b border-slate-100 dark:border-slate-800/50 last:border-0">
+                       <div key={res.symbol} onClick={() => { setSearchQuery(res.symbol); setShowDropdown(false); fetchFinancials(res.symbol); }} className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex justify-between items-center transition-colors border-b border-slate-100 dark:border-slate-800/50 last:border-0">
                          <div>
                            <div className="font-bold text-slate-900 dark:text-white text-sm transition-colors">{res.name}</div>
                            <div className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[150px] transition-colors">{res.symbol}</div>
@@ -171,7 +173,7 @@ const MarketTrends = () => {
                    </div>
                  )}
              </div>
-             <button onClick={() => { setShowDropdown(false); fetchFinancials(searchTicker); }} className="bg-indigo-600 hover:bg-indigo-500 px-4 py-2.5 rounded-xl text-white font-medium flex items-center justify-center transition-colors">
+             <button onClick={() => { setShowDropdown(false); fetchFinancials(searchQuery); }} className="bg-indigo-600 hover:bg-indigo-500 px-4 py-2.5 rounded-xl text-white font-medium flex items-center justify-center transition-colors">
                <Search size={20} />
              </button>
            </div>
@@ -217,7 +219,7 @@ const MarketTrends = () => {
            </div>
          ) : (
            <div className="text-slate-500 py-8 text-center bg-slate-50 dark:bg-slate-950/30 rounded-2xl border border-slate-200 dark:border-slate-800/50 border-dashed transition-colors">
-             {searchTicker ? `No financial data available for '${searchTicker}'.` : "Search for a company ticker to view quarterly results."}
+             {activeTicker ? `No financial data available for '${activeTicker}'.` : "Search for a company ticker to view quarterly results."}
            </div>
          )}
       </div>

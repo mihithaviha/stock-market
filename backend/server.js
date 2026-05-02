@@ -45,7 +45,16 @@ app.get("/", (req, res) => {
 // Background live pricing loop (10 secs)
 const activeTickers = new Set();
 io.on('connection', (socket) => {
-  socket.on('subscribe_ticker', (ticker) => { activeTickers.add(ticker); });
+  socket.on('subscribe_ticker', async (ticker) => { 
+    activeTickers.add(ticker); 
+    // Immediate response for fast UX
+    let price = await getCache(`price_${ticker}`);
+    if (!price) {
+      const live = await getStockQuote(ticker);
+      if (live) { price = live.price; await setCache(`price_${ticker}`, price, 10); }
+    }
+    if (price) socket.emit('live_prices', { [ticker]: price });
+  });
 });
 
 setInterval(async () => {
@@ -247,9 +256,19 @@ app.get('/api/market/search', async (req, res) => {
 });
 
 app.get('/api/market/trends', attachUserId, async (req, res) => {
-  const trends = await getMarketTrends();
-  if (trends) res.status(200).json(trends);
-  else res.status(500).json({ error: "Failed to fetch trends" });
+  try {
+    let trends = await getCache('market_trends_obj');
+    if (trends) {
+      trends = JSON.parse(trends);
+    } else {
+      trends = await getMarketTrends();
+      if (trends) await setCache('market_trends_obj', JSON.stringify(trends), 60);
+    }
+    if (trends) res.status(200).json(trends);
+    else res.status(500).json({ error: "Failed to fetch trends" });
+  } catch (e) {
+    res.status(500).json({ error: "Failed to fetch trends" });
+  }
 });
 
 app.get('/api/market/:ticker', async (req, res) => {
