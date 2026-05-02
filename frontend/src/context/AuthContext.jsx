@@ -95,7 +95,14 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={{ user, isAdmin, signUp, signIn, signInWithGoogle, signOut, updateUserPlan }}>
-      {!loading && children}
+      {loading ? (
+        <div className="min-h-screen dark:bg-slate-950 bg-slate-50 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <div className="text-slate-600 dark:text-slate-400 font-medium animate-pulse">Loading Tradezy...</div>
+          </div>
+        </div>
+      ) : children}
     </AuthContext.Provider>
   );
 };
